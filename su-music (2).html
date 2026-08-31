@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Su's Space</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D0D0F;
+    --surface: #16161A;
+    --surface2: #1E1E24;
+    --border: rgba(255,255,255,0.07);
+    --text: #F0EEE8;
+    --muted: rgba(240,238,232,0.45);
+    --glow: #ffffff;
+    --accent: rgba(255,255,255,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 1.25rem 4rem;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    top: -180px; left: 50%;
+    transform: translateX(-50%);
+    filter: blur(100px);
+    opacity: 0.15;
+    pointer-events: none;
+    background: var(--glow);
+    transition: background 0.9s ease;
+    z-index: 0;
+  }
+
+  .top-nav {
+    display: flex;
+    justify-content: center;
+    padding: 1.25rem 0 0;
+    position: relative;
+    z-index: 2;
+    border-bottom: 1px solid var(--border);
+    max-width: 780px;
+    margin: 0 auto;
+    gap: 0;
+  }
+  .nav-tab {
+    padding: 0.65rem 0.75rem 0.6rem;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    user-select: none;
+    flex: 1;
+  }
+  .nav-tab .nav-icon { font-size: 1.2rem; line-height: 1; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .page { display: none; max-width: 660px; margin: 0 auto; padding-top: 2.25rem; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  .page-header { text-align: center; margin-bottom: 1.75rem; }
+  .page-title { font-family: 'Instrument Serif', serif; font-size: clamp(1.5rem,4vw,2.2rem); font-weight: 400; line-height: 1.1; margin-bottom: 0.3rem; }
+  .page-title em { font-style: italic; }
+  .page-sub { font-size: 13px; color: var(--muted); }
+
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .vinyl {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: conic-gradient(#1c1c1c 0deg,#272727 40deg,#1c1c1c 80deg,#272727 120deg,#1c1c1c 160deg,#272727 200deg,#1c1c1c 240deg,#272727 280deg,#1c1c1c 320deg,#272727 360deg);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.25rem; position: relative;
+  }
+  .vinyl.playing { animation: spin 5s linear infinite; }
+  .vinyl-ring { position: absolute; border-radius: 50%; border: 1px solid rgba(255,255,255,0.05); }
+  .vr1{width:65px;height:65px} .vr2{width:83px;height:83px} .vr3{width:100px;height:100px}
+  .vinyl-center { width: 30px; height: 30px; border-radius: 50%; background: var(--bg); border: 1.5px solid rgba(255,255,255,0.1); z-index: 1; display:flex; align-items:center; justify-content:center; font-size:12px; }
+
+  .play-wrap { display:flex; flex-direction:column; align-items:center; gap:0.75rem; margin-bottom:1.25rem; }
+  .play-btn {
+    width: 68px; height: 68px; border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .play-btn:hover { transform: scale(1.08); background: rgba(255,255,255,0.09); }
+  .play-btn svg { width: 22px; height: 22px; fill: var(--text); margin-left: 3px; }
+  .play-hint { font-size: 12px; color: var(--muted); }
+
+  .embed-wrap { border-radius: 12px; overflow: hidden; width: 100%; display: none; }
+  .embed-wrap.visible { display: block; }
+  .embed-wrap iframe { width: 100%; border: none; border-radius: 12px; display: block; }
+  .open-full { display:block; text-align:center; margin-top:0.6rem; font-size:12px; color:var(--muted); text-decoration:none; transition:color 0.2s; }
+  .open-full:hover { color: var(--text); }
+
+  /* WORD CARD */
+  .word-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-top: 1.75rem;
+    position: relative;
+  }
+  .word-loading {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .word-loading .dots span { animation: blink 1.4s infinite; display: inline-block; }
+  .word-loading .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .word-loading .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+  .word-tag { font-size: 10px; letter-spacing:0.12em; color:var(--muted); text-transform:uppercase; margin-bottom:0.6rem; display:flex; align-items:center; gap:6px; }
+  .word-tag::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .word-es { font-family:'Instrument Serif',serif; font-size:2rem; font-style:italic; margin-bottom:0.15rem; }
+  .word-type { font-size:11px; color:var(--muted); margin-bottom:0.4rem; }
+  .word-nl-trans { font-size:1rem; font-weight:300; color:rgba(240,238,232,0.7); margin-bottom:0.85rem; }
+
+  .pron-row { display:flex; align-items:center; gap:10px; margin-bottom:1rem; }
+  .pron-text { font-size:13px; color:var(--muted); font-family:monospace; }
+  .speak-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 5px;
+    transition: border-color 0.2s, color 0.2s;
+    font-family: 'Geist', sans-serif;
+  }
+  .speak-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+  .speak-btn svg { width:13px; height:13px; fill:currentColor; }
+
+  .word-uitleg { font-size: 13px; line-height: 1.7; color: rgba(240,238,232,0.75); margin-bottom: 1rem; }
+
+  .examples-label { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:0.4rem; }
+  .example-line { font-size:13px; color:rgba(240,238,232,0.6); margin-bottom:6px; line-height:1.55; }
+  .example-line em { color:rgba(240,238,232,0.85); font-style:normal; }
+
+  .rating-row { display:flex; gap:8px; margin-top:1.25rem; }
+  .rate-btn {
+    flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    padding:9px 6px; cursor:pointer; text-align:center; font-size:18px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .rate-btn span { display:block; font-size:10px; color:var(--muted); margin-top:3px; font-family:'Geist',sans-serif; }
+  .rate-btn:hover { border-color:rgba(255,255,255,0.2); }
+  .rate-btn.active-love { border-color:#FF6B9D; background:rgba(255,107,157,0.1); }
+  .rate-btn.active-ok   { border-color:#6BCB77; background:rgba(107,203,119,0.1); }
+  .rate-btn.active-nope { border-color:#8B9DC3; background:rgba(139,157,195,0.1); }
+
+  .saved-msg { font-size:12px; color:var(--muted); text-align:center; margin-top:0.6rem; min-height:16px; }
+  .saved-msg.ok { color:#6BCB77; }
+
+  .refresh-word { background:none; border:none; cursor:pointer; color:var(--muted); font-size:11px; font-family:'Geist',sans-serif; position:absolute; top:1.25rem; right:1.25rem; display:flex; align-items:center; gap:4px; transition:color 0.2s; padding:4px 8px; border-radius:4px; }
+  .refresh-word:hover { color:var(--text); }
+  .refresh-word svg { width:12px; height:12px; fill:currentColor; transition:transform 0.4s; }
+  .refresh-word.spinning svg { transform:rotate(360deg); }
+
+  /* VOCAB PAGE */
+  .folder-tabs { display:flex; gap:6px; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .folder-tab { padding:6px 14px; border:1px solid var(--border); border-radius:20px; font-size:12px; cursor:pointer; color:var(--muted); background:var(--surface); transition:all 0.15s; }
+  .folder-tab:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+  .folder-tab.active { color:var(--text); border-color:rgba(255,255,255,0.4); }
+  .folder-tab .cnt { font-size:10px; opacity:0.55; margin-left:3px; }
+
+  .vocab-list { display:flex; flex-direction:column; gap:10px; }
+  .vocab-item { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1rem 1.25rem; cursor:pointer; transition:border-color 0.2s; }
+  .vocab-item:hover { border-color:rgba(255,255,255,0.15); }
+  .vi-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
+  .vi-word { font-family:'Instrument Serif',serif; font-size:1.2rem; font-style:italic; }
+  .vi-rating { font-size:15px; }
+  .vi-nl { font-size:12px; color:var(--muted); margin-bottom:0; }
+  .vi-detail { display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+  .vi-detail.open { display:block; }
+  .vi-uitleg { font-size:13px; line-height:1.65; color:rgba(240,238,232,0.75); margin-bottom:0.75rem; }
+  .vi-pron-row { display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; }
+  .vi-pron { font-size:12px; color:var(--muted); font-family:monospace; }
+
+  .empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); font-size:14px; line-height:1.7; }
+  .empty-state .big { font-size:2.5rem; margin-bottom:0.75rem; }
+
+  @media(max-width:480px){
+    .nav-tab{font-size:10px; padding:0.5rem 0.4rem;}
+    .nav-icon{font-size:1rem !important;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav" id="topNav">
+  <div class="nav-tab active" data-mood="0" onclick="switchMood(0)"><span class="nav-icon">🌤️</span>Cheer up</div>
+  <div class="nav-tab" data-mood="1" onclick="switchMood(1)"><span class="nav-icon">🌧️</span>Melancholy</div>
+  <div class="nav-tab" data-mood="2" onclick="switchMood(2)"><span class="nav-icon">🌿</span>Chill</div>
+  <div class="nav-tab" data-mood="3" onclick="switchMood(3)"><span class="nav-icon">🤝</span>Us two</div>
+  <div class="nav-tab" data-mood="4" onclick="switchMood(4)"><span class="nav-icon">✨</span>Su</div>
+  <div class="nav-tab" data-page="vocab" onclick="switchPage('vocab')"><span class="nav-icon">📚</span>My words</div>
+</nav>
+
+<!-- MUSIC PAGE -->
+<div class="page active" id="page-music">
+  <div class="page-header">
+    <h1 class="page-title">How are you <em>feeling?</em></h1>
+    <p class="page-sub" id="moodDesc">For when you need a little push.</p>
+  </div>
+  <div class="vinyl" id="vinyl"><div class="vinyl-ring vr1"></div><div class="vinyl-ring vr2"></div><div class="vinyl-ring vr3"></div><div class="vinyl-center" id="vinylIcon">🌤️</div></div>
+  <div class="play-wrap">
+    <button class="play-btn" id="playBtn" onclick="playRandom()" aria-label="Play random song">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <span class="play-hint">Tap to play a random song</span>
+  </div>
+  <div class="embed-wrap" id="embedWrap"></div>
+  <a class="open-full" id="openFull" href="#" target="_blank">Open full playlist in Spotify ↗</a>
+
+  <!-- WORD CARD -->
+  <div class="word-card" id="wordCard">
+    <button class="refresh-word" id="refreshBtn" onclick="loadWord(true)" title="New word">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      New word
+    </button>
+    <div id="wordContent">
+      <div class="word-loading">
+        <div class="dots"><span>●</span><span>●</span><span>●</span></div>
+        <div style="margin-top:0.5rem">Fetching a word…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VOCAB PAGE -->
+<div class="page" id="page-vocab">
+  <div class="page-header">
+    <h1 class="page-title">My <em>words</em></h1>
+    <p class="page-sub">Tap a word to read more — including pronunciation</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:1rem;">
+      <button onclick="exportWords()" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:7px 16px;font-size:12px;color:var(--muted);cursor:pointer;font-family:Geist,sans-serif;transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">⬇ Save backup</button>
+      <label style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:7px 16px;font-size:12px;color:var(--muted);cursor:pointer;font-family:Geist,sans-serif;transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">⬆ Load backup<input type="file" accept=".json" onchange="importWords(event)" style="display:none"></label>
+    </div>
+  </div>
+  <div class="folder-tabs">
+    <div class="folder-tab active" data-f="all"  onclick="filterFolder('all')">All <span class="cnt" id="cnt-all"></span></div>
+    <div class="folder-tab" data-f="love" onclick="filterFolder('love')">❤️ Love it <span class="cnt" id="cnt-love"></span></div>
+    <div class="folder-tab" data-f="ok"   onclick="filterFolder('ok')">👍 OK <span class="cnt" id="cnt-ok"></span></div>
+    <div class="folder-tab" data-f="nope" onclick="filterFolder('nope')">👎 Not for me <span class="cnt" id="cnt-nope"></span></div>
+  </div>
+  <div class="vocab-list" id="vocabList"></div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const MOODS = [
+  { id:0, label:'Cheer up',   icon:'🌤️', glow:'#FFD166', accent:'rgba(255,209,102,0.55)', desc:'For when you need a little push.',    playlist:'6o871dkZuW4YYdDnbr7Bal', link:'https://open.spotify.com/playlist/6o871dkZuW4YYdDnbr7Bal',
+    prompt:'alegría, entusiasmo, energía positiva, motivación, celebración, optimismo' },
+  { id:1, label:'Melancholy', icon:'🌧️', glow:'#8B9DC3', accent:'rgba(139,157,195,0.55)', desc:'Sometimes you just need to feel it.', playlist:'0u4EM2JCZEWQZMTzI7wwxw', link:'https://open.spotify.com/playlist/0u4EM2JCZEWQZMTzI7wwxw',
+    prompt:'melancholie, nostalgie, stilte, gemis, vergankelijkheid, weemoed' },
+  { id:2, label:'Chill',      icon:'🌿', glow:'#6BCB77', accent:'rgba(107,203,119,0.55)', desc:'Low effort. High vibe.',              playlist:'5SDccLeiVIAJGRk8IAJWwS', link:'https://open.spotify.com/playlist/5SDccLeiVIAJGRk8IAJWwS',
+    prompt:'rust, kalmte, traagheid, gemak, genieten, ontspanning' },
+  { id:3, label:'Us two',     icon:'🤝', glow:'#FF6B9D', accent:'rgba(255,107,157,0.55)', desc:'The playlist we made together.',      playlist:'65PQbepYO45KOuhEOVhM1c', link:'https://open.spotify.com/playlist/65PQbepYO45KOuhEOVhM1c',
+    prompt:'verbondenheid, vriendschap, vertrouwen, samenzijn, gedeelde herinneringen, affectie' },
+  { id:4, label:'Su',         icon:'✨', glow:'#C77DFF', accent:'rgba(199,125,255,0.55)', desc:'Just for you.',                       playlist:'0UU6eraNUqdRJ4nmE7G2uY', link:'https://open.spotify.com/playlist/0UU6eraNUqdRJ4nmE7G2uY',
+    prompt:'bijzonderheid, authenticiteit, licht, moed, warmte, uitstraling' }
+];
+
+
+// ── WORD BANK (300+ words, organised by mood, all explanations in Dutch) ─────
+const WORDS = {
+  0: [ // Cheer up — alegría, energie, positiviteit
+    {woord:'alegría',woordsoort:'zelfstandig naamwoord (v)',vertaling:'vreugde / blijdschap',uitleg:'Alegría is meer dan geluk — het is een uitbundige, zichtbare vreugde. In de Spaanse cultuur is alegría bijna een levensstijl: luid lachen, dansen, samen genieten.',uitspraak:'ah-leh-GREE-ah',voorbeelden:[{es:'¡Qué alegría verte!',nl:'Wat fijn om je te zien!'},{es:'Su cara irradiaba alegría.',nl:'Haar gezicht straalde van vreugde.'}]},
+    {woord:'chispa',woordsoort:'zelfstandig naamwoord (v)',vertaling:'vonk / pit / fut',uitleg:'Chispa betekent letterlijk vonk, maar wordt ook gebruikt voor iemand met energie en charme. Iemand met chispa maakt een kamer levendiger alleen al door er te zijn.',uitspraak:'CHEES-pah',voorbeelden:[{es:'Tiene mucha chispa.',nl:'Ze heeft zoveel pit.'},{es:'La conversación tuvo chispa.',nl:'Het gesprek had echte vonken.'}]},
+    {woord:'genial',woordsoort:'bijvoeglijk naamwoord',vertaling:'geweldig / super',uitleg:'In het Spaans is genial het meest gebruikte woord voor "geweldig". Het is informeel en enthousiast — precies wat je zegt als iets je verrast of blij maakt.',uitspraak:'heh-NYAL',voorbeelden:[{es:'¡Qué idea tan genial!',nl:'Wat een geweldig idee!'},{es:'La fiesta fue genial.',nl:'Het feest was super.'}]},
+    {woord:'disfrutar',woordsoort:'werkwoord',vertaling:'genieten / ervan genieten',uitleg:'Disfrutar is meer dan "leuk vinden" — het betekent bewust genieten, het moment in je opnemen. Spanjaarden gebruiken het veel: disfruta la vida.',uitspraak:'dees-froo-TAR',voorbeelden:[{es:'Disfruta el momento.',nl:'Geniet van het moment.'},{es:'Me encanta disfrutar de un buen café.',nl:'Ik hou ervan om van een goede koffie te genieten.'}]},
+    {woord:'maravilloso',woordsoort:'bijvoeglijk naamwoord',vertaling:'prachtig / wonderlijk',uitleg:'Sterker dan "mooi" of "leuk" — maravilloso gebruik je als iets je echt verbijstert of overweldigt. Afgeleid van maravilla (wonder).',uitspraak:'mah-rah-vee-YO-so',voorbeelden:[{es:'Qué día tan maravilloso.',nl:'Wat een prachtige dag.'},{es:'Es un lugar maravilloso.',nl:'Het is een wonderlijke plek.'}]},
+    {woord:'estrenar',woordsoort:'werkwoord',vertaling:'iets voor het eerst gebruiken / in première gaan',uitleg:'Estrenar heeft geen Nederlands equivalent. Je estrenas kleding (voor het eerst aantrekken), een film (première), of een appartement. Er zit een ritueel gevoel aan — het is speciaal.',uitspraak:'es-treh-NAR',voorbeelden:[{es:'Hoy estreno este vestido.',nl:'Vandaag draag ik deze jurk voor het eerst.'},{es:'La peli se estrena mañana.',nl:'De film gaat morgen in première.'}]},
+    {woord:'ánimo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'moed / energie / aanmoediging',uitleg:'¡Ánimo! is wat je roept als iemand aanmoediging nodig heeft. Het betekent ook de innerlijke kracht om door te gaan — geest en energie tegelijk.',uitspraak:'AH-nee-mo',voorbeelden:[{es:'¡Ánimo, que tú puedes!',nl:'Kom op, jij kan het!'},{es:'Hoy tengo mucho ánimo.',nl:'Vandaag heb ik veel energie.'}]},
+    {woord:'ilusión',woordsoort:'zelfstandig naamwoord (v)',vertaling:'enthousiasme / verwachting / hoop',uitleg:'In het Spaans betekent ilusión niet alleen "illusie" maar ook het opgewonden gevoel van iets verwachten. Tengo mucha ilusión = ik verheug me er enorm op.',uitspraak:'ee-loo-SYON',voorbeelden:[{es:'Tengo mucha ilusión por el viaje.',nl:'Ik verheug me enorm op de reis.'},{es:'¡Qué ilusión!',nl:'Wat spannend!'}]},
+    {woord:'bullicioso',woordsoort:'bijvoeglijk naamwoord',vertaling:'bruisend / levendig / rumoerig',uitleg:'Beschrijft een plek of persoon vol leven en lawaai — maar op een prettige manier. Een bullicioso plein op een zomerse avond is precies waar je wil zijn.',uitspraak:'boo-lee-THYO-so',voorbeelden:[{es:'El mercado estaba bullicioso.',nl:'De markt was bruisend van leven.'},{es:'Era una niña muy bulliciosa.',nl:'Ze was een heel levendig meisje.'}]},
+    {woord:'vivaz',woordsoort:'bijvoeglijk naamwoord',vertaling:'levendig / vlot / pittig',uitleg:'Vivaz beschrijft iemand of iets vol energie en scherpte. Het wordt gebruikt voor mensen die snel denken, snel praten en een aanstekelijke energie hebben.',uitspraak:'vee-VATH',voorbeelden:[{es:'Es una persona muy vivaz.',nl:'Ze is een heel levendig persoon.'},{es:'Tiene un humor vivaz.',nl:'Ze heeft een scherp gevoel voor humor.'}]},
+    {woord:'entusiasmo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'enthousiasme',uitleg:'Hetzelfde als in het Nederlands, maar Spanjaarden gebruiken het met veel meer gevoel. Con entusiasmo doen betekent er echt voor gaan.',uitspraak:'en-too-SYAS-mo',voorbeelden:[{es:'Lo hace todo con entusiasmo.',nl:'Ze doet alles met enthousiasme.'},{es:'Su entusiasmo es contagioso.',nl:'Haar enthousiasme is aanstekelijk.'}]},
+    {woord:'gozo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'vreugde / genot',uitleg:'Gozo is een diepere, rustiger vreugde dan alegría — meer innerlijk, bijna spiritueel. Je voelt gozo als iets je echt goed doet.',uitspraak:'GO-tho',voorbeelden:[{es:'Sintió un gozo profundo.',nl:'Ze voelde een diepe vreugde.'},{es:'El gozo de vivir.',nl:'De vreugde van het leven.'}]},
+    {woord:'festivo',woordsoort:'bijvoeglijk naamwoord',vertaling:'feestelijk / vrolijk',uitleg:'Festivo verwijst naar feestdagen maar ook naar een feestelijke sfeer of stemming. Een ambiente festivo is een sfeer waar je je meteen blij van voelt.',uitspraak:'fes-TEE-vo',voorbeelden:[{es:'Había un ambiente muy festivo.',nl:'Er hing een heel feestelijke sfeer.'},{es:'Es un día festivo.',nl:'Het is een feestdag.'}]},
+    {woord:'derroche',woordsoort:'zelfstandig naamwoord (m)',vertaling:'overdaad / verkwisting (positief gebruikt)',uitleg:'Letterlijk "verspilling", maar in positieve context: een derroche de alegría is een overdaad aan vrolijkheid. Je gooit er met blijdschap mee.',uitspraak:'deh-RRO-cheh',voorbeelden:[{es:'Un derroche de energía.',nl:'Een overvloed aan energie.'},{es:'Bailó con un derroche de pasión.',nl:'Ze danste met een uitbundige passie.'}]},
+    {woord:'radiante',woordsoort:'bijvoeglijk naamwoord',vertaling:'stralend',uitleg:'Iemand die radiante is straalt van binnen naar buiten. Je ziet het aan hun gezicht, hun energie. Gebruikt voor mensen, glimlachen en ook voor het weer.',uitspraak:'rah-DYAN-teh',voorbeelden:[{es:'Estás radiante hoy.',nl:'Je straalt vandaag.'},{es:'Una sonrisa radiante.',nl:'Een stralende glimlach.'}]},
+    {woord:'alborozo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'uitgelaten vreugde / uitbundigheid',uitleg:'Alborozo is de uitbundige, bijna lawaaierige vreugde die je voelt bij heel goed nieuws. Sterker dan alegría, minder alledaags.',uitspraak:'al-bo-RO-tho',voorbeelden:[{es:'La noticia causó alborozo.',nl:'Het nieuws zorgde voor uitgelaten vreugde.'},{es:'Gritó de alborozo.',nl:'Ze schreeuwde het uit van blijdschap.'}]},
+    {woord:'euforia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'euforie',uitleg:'Extreme, overweldigende vreugde. Euforia gebruik je voor momenten van intense opwinding — na een overwinning, goed nieuws, of een bijzonder moment.',uitspraak:'eh-oo-FO-rya',voorbeelden:[{es:'Sentí una euforia enorme.',nl:'Ik voelde een enorme euforie.'},{es:'La euforia del público era contagiosa.',nl:'De euforie van het publiek was aanstekelijk.'}]},
+    {woord:'vitalidad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'vitaliteit / levenskracht',uitleg:'Vitalidad is de energie en levenskracht die je van iemand afvoelt. Iemand met vitalidad lijkt nooit moe en brengt leven in de kamer.',uitspraak:'vee-tah-lee-DAD',voorbeelden:[{es:'Irradia vitalidad.',nl:'Ze straalt vitaliteit uit.'},{es:'Su vitalidad es increíble.',nl:'Haar levenskracht is ongelooflijk.'}]},
+    {woord:'brillo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'glans / schittering / glinstering',uitleg:'Brillo is de glans die je ziet in ogen die stralen, of de schittering van iets moois. Ook figuurlijk: el brillo de su mirada = de glans in haar blik.',uitspraak:'BREE-yo',voorbeelden:[{es:'El brillo de sus ojos me encantó.',nl:'De glans in haar ogen fascineerde me.'},{es:'Hay un brillo especial en ella.',nl:'Er is een bijzondere glans in haar.'}]},
+    {woord:'plenitud',woordsoort:'zelfstandig naamwoord (v)',vertaling:'volheid / vervulling',uitleg:'Plenitud is het gevoel dat niets ontbreekt — volledigheid en tevredenheid tegelijk. Je voelt plenitud als je precies op de goede plek bent.',uitspraak:'pleh-nee-TOOD',voorbeelden:[{es:'Vivo con plenitud.',nl:'Ik leef met een gevoel van vervulling.'},{es:'Siente la plenitud del momento.',nl:'Voel de volheid van het moment.'}]},
+    {woord:'espontáneo',woordsoort:'bijvoeglijk naamwoord',vertaling:'spontaan',uitleg:'Iemand die espontáneo is handelt vanuit het hart, zonder nadenken of plannen. In de Spaanse cultuur wordt spontaniteit erg gewaardeerd.',uitspraak:'es-pon-TAH-neh-o',voorbeelden:[{es:'Es muy espontánea.',nl:'Ze is heel spontaan.'},{es:'Un gesto espontáneo.',nl:'Een spontaan gebaar.'}]},
+    {woord:'desenfadado',woordsoort:'bijvoeglijk naamwoord',vertaling:'ontspannen / zorgeloos / nonchalant',uitleg:'Desenfadado beschrijft iemand die licht is, geen zorgen draagt en door het leven gaat zonder zichzelf serieus te nemen. Een positieve eigenschap.',uitspraak:'des-en-fah-DAH-do',voorbeelden:[{es:'Tiene un estilo desenfadado.',nl:'Ze heeft een ontspannen stijl.'},{es:'Su actitud desenfadada me gusta.',nl:'Ik hou van haar zorgeloze houding.'}]},
+    {woord:'celebrar',woordsoort:'werkwoord',vertaling:'vieren / veroorzaken',uitleg:'Celebrar is zowel "vieren" (een feest) als "toejuichen". In het dagelijks Spaans vieren mensen kleine dingen ook — een goed cijfer, een mooie dag.',uitspraak:'theh-leh-BRAR',voorbeelden:[{es:'¡Hay que celebrarlo!',nl:'Dat moet gevierd worden!'},{es:'Celebraron la noticia juntos.',nl:'Ze vierden het nieuws samen.'}]},
+    {woord:'júbilo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'jubelende vreugde / jubeling',uitleg:'Júbilo is de vreugde die je voelt als je wil uitroepen en springen. Formeler dan alegría, maar intenser. Wordt veel gebruikt in literatuur en muziek.',uitspraak:'HOO-bee-lo',voorbeelden:[{es:'Un grito de júbilo.',nl:'Een jubelkreet.'},{es:'El júbilo del equipo era enorme.',nl:'De jubelende vreugde van het team was enorm.'}]},
+    {woord:'salero',woordsoort:'zelfstandig naamwoord (m)',vertaling:'charme / pit / gratie',uitleg:'Salero is een typisch Spaans woord voor de combinatie van charme, gratie en humor. Letterlijk "zoutvat" — iemand met salero brengt smaak in het leven.',uitspraak:'sah-LEH-ro',voorbeelden:[{es:'Baila con mucho salero.',nl:'Ze danst met veel gratie en charme.'},{es:'Tiene un salero natural.',nl:'Ze heeft een natuurlijke charme.'}]},
+    {woord:'luminoso',woordsoort:'bijvoeglijk naamwoord',vertaling:'lichtend / helder / stralend',uitleg:'Luminoso beschrijft alles wat licht uitstraalt — een kamer, een dag, maar ook een persoon die helderheid en warmte brengt.',uitspraak:'loo-mee-NO-so',voorbeelden:[{es:'Una sonrisa luminosa.',nl:'Een stralende glimlach.'},{es:'Un día luminoso y alegre.',nl:'Een heldere, vrolijke dag.'}]},
+    {woord:'risueño',woordsoort:'bijvoeglijk naamwoord',vertaling:'glimlachend / vrolijk / blij van aard',uitleg:'Risueño beschrijft iemand die altijd een glimlach heeft, van nature vrolijk is. Afgeleid van risa (lach) — een persoon die de lach dichtbij draagt.',uitspraak:'ree-SWEH-nyo',voorbeelden:[{es:'Tiene un carácter risueño.',nl:'Ze heeft een vrolijk karakter.'},{es:'Una cara risueña.',nl:'Een glimlachend gezicht.'}]},
+    {woord:'optimismo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'optimisme',uitleg:'Hetzelfde als in het Nederlands, maar in de Spaanse context heeft optimismo een praktische lading — het is niet naïef, het is een bewuste keuze.',uitspraak:'op-tee-MEES-mo',voorbeelden:[{es:'Vive con optimismo.',nl:'Ze leeft met optimisme.'},{es:'El optimismo es contagioso.',nl:'Optimisme is aanstekelijk.'}]},
+    {woord:'desparpajo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'onbevangenheid / lef / nonchalance',uitleg:'Desparpajo is de eigenschap om zonder schaamte of verlegenheid je eigen gang te gaan. Iemand met desparpajo zegt wat ze denkt en doet het met stijl.',uitspraak:'des-par-PAH-ho',voorbeelden:[{es:'Habla con mucho desparpajo.',nl:'Ze praat met grote onbevangenheid.'},{es:'Su desparpajo me sorprende.',nl:'Haar lef verrast me altijd.'}]},
+    {woord:'destellar',woordsoort:'werkwoord',vertaling:'schitteren / fonkelen',uitleg:'Destellar is het flikkeren of schitteren van licht of ogen. Als iemands ogen destellan kijken ze met een vonk van leven of blijdschap.',uitspraak:'des-teh-YAR',voorbeelden:[{es:'Sus ojos destellaban de alegría.',nl:'Haar ogen schitterden van vreugde.'},{es:'Las estrellas destellan en el cielo.',nl:'De sterren fonkelen aan de hemel.'}]},
+    {woord:'jarana',woordsoort:'zelfstandig naamwoord (v)',vertaling:'feestpret / herrie / lol',uitleg:'Jarana is informeel voor feeststemming en herrie — de soort avond waarop iedereen lacht, danst en lawaai maakt. Ir de jarana = op stap gaan.',uitspraak:'hah-RAH-nah',voorbeelden:[{es:'Salieron de jarana hasta las 3.',nl:'Ze gingen op stap tot 3 uur.'},{es:'¡Vamos de jarana!',nl:'Laten we feesten!'}]},
+    {woord:'regocijo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'uitgelatenheid / prettige opwinding',uitleg:'Regocijo is de vreugde die je voelt bij iets grappigs of moois — een lach van binnen. Formeler dan "lol", expressiever dan "plezier".',uitspraak:'reh-go-THEE-ho',voorbeelden:[{es:'El chiste causó regocijo general.',nl:'De grap zorgde voor algemene vrolijkheid.'},{es:'Siento regocijo cuando te veo.',nl:'Ik voel vrolijkheid als ik je zie.'}]},
+    {woord:'zozobra',woordsoort:'zelfstandig naamwoord (v) [antonym]',vertaling:'onrust / angst — het tegenovergestelde van vrolijkheid',uitleg:'Zozobra is de innerlijke onrust en bezorgdheid. We leren het als contrast — als je zozobra kent, weet je ook beter wat je mist als het weg is.',uitspraak:'tho-THO-brah',voorbeelden:[{es:'Sin zozobra, solo alegría.',nl:'Geen onrust, alleen vreugde.'},{es:'Superó su zozobra interior.',nl:'Ze overwon haar innerlijke onrust.'}]},
+    {woord:'apasionado',woordsoort:'bijvoeglijk naamwoord',vertaling:'gepassioneerd / vurig',uitleg:'Iemand die apasionado is doet alles met hart en ziel. Geen halfslachtige pogingen — alles of niets. Een heel Spaans begrip.',uitspraak:'ah-pah-syo-NAH-do',voorbeelden:[{es:'Es una bailarina apasionada.',nl:'Ze is een gepassioneerde danseres.'},{es:'Habla de forma apasionada.',nl:'Ze praat op een vurige manier.'}]},
+    {woord:'fascinante',woordsoort:'bijvoeglijk naamwoord',vertaling:'fascinerend / boeiend',uitleg:'Wat je aandacht volledig grijpt en vasthoudt. In het Spaans wordt het veel gebruikt om mensen, plekken of ideeën te beschrijven die je niet los kunnen laten.',uitspraak:'fah-thee-NAN-teh',voorbeelden:[{es:'Es una persona fascinante.',nl:'Ze is een fascinerend persoon.'},{es:'Qué idea tan fascinante.',nl:'Wat een boeiend idee.'}]},
+    {woord:'esperanzador',woordsoort:'bijvoeglijk naamwoord',vertaling:'hoopgevend / veelbelovend',uitleg:'Iets dat esperanzador is geeft je hoop voor de toekomst. Een woord dat optimisme en mogelijkheden in zich draagt.',uitspraak:'es-peh-ran-tha-DOR',voorbeelden:[{es:'Las noticias son esperanzadoras.',nl:'Het nieuws is hoopgevend.'},{es:'Un comienzo esperanzador.',nl:'Een veelbelovend begin.'}]},
+    {woord:'pletórico',woordsoort:'bijvoeglijk naamwoord',vertaling:'overvloedig / overlopen van',uitleg:'Pletórico de algo betekent overlopen van iets — van vreugde, energie of enthousiasme. Bijna te vol om in te bevatten.',uitspraak:'pleh-TO-ree-co',voorbeelden:[{es:'Está pletórica de felicidad.',nl:'Ze loopt over van geluk.'},{es:'Un estadio pletórico de gente.',nl:'Een stadion vol tot de nok.'}]},
+    {woord:'simpatía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'sympathie / vriendelijkheid / charme',uitleg:'In het Spaans is simpatía meer dan medelijden — het is de eigenschap aantrekkelijk en vriendelijk te zijn. Ser simpático is een groot compliment.',uitspraak:'seem-pah-TEE-ah',voorbeelden:[{es:'Me cae bien, tiene mucha simpatía.',nl:'Ik mag haar graag, ze is erg charmant.'},{es:'Su simpatía conquistó a todos.',nl:'Haar vriendelijkheid won iedereen voor zich.'}]},
+    {woord:'alegre',woordsoort:'bijvoeglijk naamwoord',vertaling:'vrolijk / blij',uitleg:'Het simpelste en meest gebruikte woord voor vrolijk. Alegre beschrijft zowel mensen als plaatsen, muziek en sfeer.',uitspraak:'ah-LEH-greh',voorbeelden:[{es:'Siempre está alegre.',nl:'Ze is altijd vrolijk.'},{es:'Una música alegre.',nl:'Vrolijke muziek.'}]},
+    {woord:'fiesta',woordsoort:'zelfstandig naamwoord (v)',vertaling:'feest / feestdag',uitleg:'Fiesta is meer dan een partijtje — het is een cultureel ritueel in Spanje. De fiesta brengt mensen samen, doorbreekt de routine en viert het leven.',uitspraak:'FYES-tah',voorbeelden:[{es:'¡Vamos de fiesta!',nl:'We gaan feesten!'},{es:'Hoy es día de fiesta.',nl:'Vandaag is het een feestdag.'}]},
+    {woord:'ganas',woordsoort:'zelfstandig naamwoord (mv)',vertaling:'zin in iets / motivatie / trek',uitleg:'Tener ganas de algo = zin hebben in iets. Het is een van de meest alledaagse en expressieve Spaanse woorden — je gebruikt het voor alles van pizza eten tot reizen.',uitspraak:'GAH-nas',voorbeelden:[{es:'Tengo muchas ganas de verte.',nl:'Ik heb er zoveel zin in om je te zien.'},{es:'Hoy no tengo ganas de nada.',nl:'Vandaag heb ik nergens zin in.'}]},
+    {woord:'floreciente',woordsoort:'bijvoeglijk naamwoord',vertaling:'bloeiend / in bloei',uitleg:'Letterlijk "bloeiend" — maar ook figuurlijk voor een persoon, relatie of situatie die in opbloei is. Positief en vol potentieel.',uitspraak:'flo-reh-THYEN-teh',voorbeelden:[{es:'Tiene una vida floreciente.',nl:'Ze heeft een bloeiend leven.'},{es:'Un negocio floreciente.',nl:'Een bloeiend bedrijf.'}]},
+    {woord:'hazaña',woordsoort:'zelfstandig naamwoord (v)',vertaling:'heldendaad / prestatie / krachttoer',uitleg:'Een hazaña is iets bijzonders dat iemand heeft bereikt — groot of klein. Het heeft iets heldachtigs, bewonderenswaardigs.',uitspraak:'ah-THA-nyah',voorbeelden:[{es:'Terminar el maratón fue una hazaña.',nl:'De marathon afmaken was een heldendaad.'},{es:'¡Qué hazaña!',nl:'Wat een prestatie!'}]},
+    {woord:'vivamente',woordsoort:'bijwoord',vertaling:'levendig / vurig / hartelijk',uitleg:'Vivamente versterkt een gevoel of reactie. Je kan iets vivamente wensen, bedanken of aanbevelen — altijd met gevoel.',uitspraak:'vee-vah-MEN-teh',voorbeelden:[{es:'Lo deseo vivamente.',nl:'Ik wens het vurig.'},{es:'Te lo recomiendo vivamente.',nl:'Ik beveel het je hartelijk aan.'}]},
+    {woord:'picardía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'kattenkwaad / schalkse humor / sluwheid',uitleg:'Picardía is de vrolijke sluwheid — grappig zijn op een licht ondeugend manier. Iemand met picardía weet hoe het moet zonder het te ver te drijven.',uitspraak:'pee-kar-DEE-ah',voorbeelden:[{es:'Sus ojos brillan con picardía.',nl:'Haar ogen schitteren van schalkse humor.'},{es:'Lo dijo con picardía.',nl:'Ze zei het met een glimlach vol ondeugende sluwheid.'}]},
+    {woord:'orgullo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'trots',uitleg:'Orgullo is de trots die je voelt voor jezelf of iemand die je lief hebt. In het Spaans is trots een positieve, warme emotie — geen arrogantie.',uitspraak:'or-GOO-yo',voorbeelden:[{es:'Siento orgullo de ti.',nl:'Ik ben trots op je.'},{es:'Es un orgullo verte crecer.',nl:'Het is een trots om je te zien opgroeien.'}]},
+    {woord:'cheer',woordsoort:'interjectie (leenwoord)',vertaling:'aanmoediging / vrolijkheid',uitleg:'In Spanje wordt ¡Chin chin! gebruikt voor proost, maar ¡Ánimo! voor aanmoediging. Cheer als concept leeft in woorden als ánimo, alegría en salero.',uitspraak:'CHEER (als leenwoord)',voorbeelden:[{es:'¡Ánimo y alegría!',nl:'Moed en vrolijkheid!'},{es:'Brindaron con alegría.',nl:'Ze proostten vrolijk.'}]},
+    {woord:'encantador',woordsoort:'bijvoeglijk naamwoord',vertaling:'charmant / betoverend / lieftallig',uitleg:'Encantador betekent letterlijk "betoverend". Je gebruikt het voor mensen die je meteen voor zich winnen met hun charme en vriendelijkheid.',uitspraak:'en-kan-tah-DOR',voorbeelden:[{es:'Es un hombre encantador.',nl:'Hij is een charmante man.'},{es:'Tiene una sonrisa encantadora.',nl:'Ze heeft een betoverende glimlach.'}]},
+    {woord:'bienvenido',woordsoort:'bijvoeglijk naamwoord / uitroep',vertaling:'welkom',uitleg:'Bienvenido is letterlijk "goed gekomen" — een hartelijk welkom. Warm en direct, zonder poespas. Het wordt ook figuurlijk gebruikt: bienvenida la primavera.',uitspraak:'byen-veh-NEE-do',voorbeelden:[{es:'¡Bienvenida a casa!',nl:'Welkom thuis!'},{es:'Bienvenido sea el cambio.',nl:'Welkom zij de verandering.'}]},
+    {woord:'prosperidad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'welvaart / voorspoed',uitleg:'Prosperidad gaat over bloeien in brede zin — niet alleen geld, maar ook gezondheid, relaties en geluk. Te wensen op belangrijke momenten.',uitspraak:'pros-peh-ree-DAD',voorbeelden:[{es:'Te deseo mucha prosperidad.',nl:'Ik wens je veel voorspoed.'},{es:'Un año de prosperidad.',nl:'Een jaar van welvaart.'}]},
+    {woord:'despierto',woordsoort:'bijvoeglijk naamwoord',vertaling:'wakker / alert / scherpzinnig',uitleg:'Despierto betekent letterlijk "wakker", maar figuurlijk: mentaal alert en levendig. Iemand die despierto is mist niets.',uitspraak:'des-PYER-to',voorbeelden:[{es:'Es muy despierta para su edad.',nl:'Ze is erg scherpzinnig voor haar leeftijd.'},{es:'Tiene una mente muy despierta.',nl:'Ze heeft een heel wakker verstand.'}]},
+    {woord:'triunfar',woordsoort:'werkwoord',vertaling:'triomferen / slagen',uitleg:'Triunfar is de overwinning behalen — in sport, liefde, werk of leven. Spanjaarden gebruiken het ook voor kleine successen: triunfé con la receta.',uitspraak:'tryon-FAR',voorbeelden:[{es:'¡Vas a triunfar!',nl:'Je gaat het redden!'},{es:'Triunfó en su primer concierto.',nl:'Ze triomfeerde bij haar eerste concert.'}]},
+    {woord:'carcajada',woordsoort:'zelfstandig naamwoord (v)',vertaling:'schaterlach',uitleg:'Een carcajada is geen gewone lach maar een diepe, luid schallende lach die vanzelf komt. Reírse a carcajadas = schateren van het lachen.',uitspraak:'kar-ka-HAH-dah',voorbeelden:[{es:'Soltó una carcajada enorme.',nl:'Ze barstte uit in een enorme schaterlach.'},{es:'Nos reímos a carcajadas.',nl:'We schaaterden van het lachen.'}]},
+    {woord:'rebosante',woordsoort:'bijvoeglijk naamwoord',vertaling:'overvloeiend van / boordevol',uitleg:'Rebosante de algo betekent zo vol van iets dat het overloopt. Rebosante de energía, de alegría, de amor — altijd met enthousiasme.',uitspraak:'reh-bo-SAN-teh',voorbeelden:[{es:'Está rebosante de alegría.',nl:'Ze loopt over van vreugde.'},{es:'Una copa rebosante de vino.',nl:'Een glas vol tot aan de rand met wijn.'}]},
+    {woord:'afable',woordsoort:'bijvoeglijk naamwoord',vertaling:'vriendelijk / innemend / aangenaam in omgang',uitleg:'Afable beschrijft iemand die makkelijk in de omgang is, altijd vriendelijk en prettig. Geen opvallende uitstraling, maar altijd fijn om bij te zijn.',uitspraak:'ah-FAH-bleh',voorbeelden:[{es:'Es una persona muy afable.',nl:'Ze is erg vriendelijk en innemend.'},{es:'Un tono de voz afable.',nl:'Een aangename toon van stem.'}]},
+    {woord:'querido',woordsoort:'bijvoeglijk naamwoord',vertaling:'geliefd / dierbaar',uitleg:'Querido is het Spaanse "dierbaar" — afgeleid van querer (houden van). Wordt gebruikt in brieven, gesprekken en als aanspreking voor iemand van wie je houdt.',uitspraak:'keh-REE-do',voorbeelden:[{es:'Mi querida amiga.',nl:'Mijn geliefde vriendin.'},{es:'Es muy querida por todos.',nl:'Ze is bij iedereen geliefd.'}]},
+    {woord:'resolución',woordsoort:'zelfstandig naamwoord (v)',vertaling:'vastberadenheid / beslissing',uitleg:'Resolución is de kracht om een beslissing te nemen en erbij te blijven. Geen twijfel, geen halfslachtigheid — iemand met resolución weet wat ze wil.',uitspraak:'reh-so-loo-THYON',voorbeelden:[{es:'Actúa con resolución.',nl:'Ze handelt met vastberadenheid.'},{es:'Tomó la decisión con resolución.',nl:'Ze nam de beslissing resoluut.'}]},
+    {woord:'jovial',woordsoort:'bijvoeglijk naamwoord',vertaling:'joviaal / vrolijk van aard',uitleg:'Jovial beschrijft iemand die van nature vrolijk, open en aangenaam gezelschap is. Het is een stabiele eigenschap, geen tijdelijke stemming.',uitspraak:'ho-BYAL',voorbeelden:[{es:'Tiene un carácter jovial.',nl:'Ze heeft een joviaal karakter.'},{es:'Su actitud jovial anima a todos.',nl:'Haar vrolijke houding brengt iedereen op.'}]},
+    {woord:'esperanza',woordsoort:'zelfstandig naamwoord (v)',vertaling:'hoop',uitleg:'Esperanza is hoop — maar ook een naam. In de Spaanse cultuur is hoop een actief gevoel, niet passief afwachten. También is it the name of thousands of Spanish women.',uitspraak:'es-peh-RAN-tha',voorbeelden:[{es:'La esperanza es lo último que se pierde.',nl:'Hoop is het laatste dat je verliest.'},{es:'Tengo esperanza en el futuro.',nl:'Ik heb hoop voor de toekomst.'}]},
+    {woord:'alentar',woordsoort:'werkwoord',vertaling:'aanmoedigen / aanvuren / inspireren',uitleg:'Alentar is iemand moed inspreken of aanmoedigen. Meer dan bemoedigen — het is hun vuur aanwakkeren.',uitspraak:'ah-len-TAR',voorbeelden:[{es:'Sus palabras me alentaron mucho.',nl:'Haar woorden moedigden me enorm aan.'},{es:'Alentar a alguien es un regalo.',nl:'Iemand aanmoedigen is een cadeau.'}]},
+  ],
+  1: [ // Melancholy — nostalgie, gemis, vergankelijkheid, stille schoonheid
+    {woord:'morriña',woordsoort:'zelfstandig naamwoord (v)',vertaling:'heimwee (Galicisch)',uitleg:'Morriña komt uit het Galicisch en beschrijft een diep verlangen naar huis, naar mensen, naar een plek die er niet meer is. Niet vertaalbaar — het zit ergens tussen heimwee en rouw.',uitspraak:'mo-REEN-yah',voorbeelden:[{es:'Siento mucha morriña de mi ciudad.',nl:'Ik verlang diep naar mijn stad.'},{es:'La morriña me acompaña cuando estoy lejos.',nl:'Heimwee vergezelt me als ik ver weg ben.'}]},
+    {woord:'nostalgia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'nostalgie',uitleg:'Het bitterzoete verlangen naar het verleden. In het Spaans draagt nostalgia echte zwaarheid — niet vaag, maar gevoeld. Je ervaart het als een echo van iets moois dat voorbij is.',uitspraak:'nos-TAL-hya',voorbeelden:[{es:'Me invade la nostalgia.',nl:'Nostalgie overspoelt me.'},{es:'Una canción llena de nostalgia.',nl:'Een lied vol nostalgie.'}]},
+    {woord:'añoranza',woordsoort:'zelfstandig naamwoord (v)',vertaling:'verlangen / gemis',uitleg:'Añoranza is het zachte, aanhoudende verlangen naar iets of iemand die er niet meer is. Zachter dan pijn, zwaarder dan "missen" — het blijft rustig bij je zitten.',uitspraak:'ah-nyo-RAN-tha',voorbeelden:[{es:'Siento añoranza de aquellos tiempos.',nl:'Ik verlang naar die tijden.'},{es:'La añoranza se mezcla con recuerdos.',nl:'Verlangen mengt zich met herinneringen.'}]},
+    {woord:'efímero',woordsoort:'bijvoeglijk naamwoord',vertaling:'vluchtig / vergankelijk',uitleg:'Efímero beschrijft wat mooi is juist omdat het niet blijft. Een vluchtig moment, een bloem die verwelkt, een zomers geluid. In de Spaanse poëzie centraal.',uitspraak:'eh-FEE-meh-ro',voorbeelden:[{es:'La belleza es efímera.',nl:'Schoonheid is vluchtig.'},{es:'Un amor efímero pero intenso.',nl:'Een vluchtige maar intense liefde.'}]},
+    {woord:'melancolía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'melancholie',uitleg:'Melancolía is een diepe, stille droefheid die niet pijnlijk hoeft te zijn. Denk aan een regenachtige middag, een oude foto, een lied dat je deed denken aan vroeger.',uitspraak:'meh-lan-co-LEE-ah',voorbeelden:[{es:'Una melodía cargada de melancolía.',nl:'Een melodie doordrénkt van melancholie.'},{es:'La melancolía tiene su propia belleza.',nl:'Melancholie heeft haar eigen schoonheid.'}]},
+    {woord:'soledad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'eenzaamheid / stilte / alleen-zijn',uitleg:'Soledad kan gekozen stilte zijn (mooi) of opgelegde eenzaamheid (zwaar). In het Spaans maakt de context het verschil. También een vrouwennaam.',uitspraak:'so-leh-DAD',voorbeelden:[{es:'Disfruto de la soledad a veces.',nl:'Soms geniet ik van het alleen-zijn.'},{es:'La soledad pesa cuando no la eliges.',nl:'Eenzaamheid drukt als je er niet voor kiest.'}]},
+    {woord:'suspirar',woordsoort:'werkwoord',vertaling:'zuchten',uitleg:'Suspirar is zuchten — maar in de Spaanse literatuur is een suspiro het zuchten van verlangen, liefde, van dingen die onuitgesproken blijven.',uitspraak:'soos-pee-RAR',voorbeelden:[{es:'Suspiró al leer la carta.',nl:'Ze zuchtte terwijl ze de brief las.'},{es:'Solo puedo suspirar.',nl:'Ik kan alleen maar zuchten.'}]},
+    {woord:'agridulce',woordsoort:'bijvoeglijk naamwoord',vertaling:'bitterzoet',uitleg:'Letterlijk "zuurzoet" (agrio = zuur, dulce = zoet). Agridulce beschrijft gevoelens of momenten die tegelijk pijn doen en mooi zijn — afscheid, herinnering, nostalgie.',uitspraak:'ah-gree-DOOL-theh',voorbeelden:[{es:'Un recuerdo agridulce.',nl:'Een bitterzoete herinnering.'},{es:'La despedida fue agridulce.',nl:'Het afscheid was bitterzoet.'}]},
+    {woord:'reminiscencia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'herinnering / reminiscentie',uitleg:'Een reminiscencia is een fragment van het verleden dat spontaan opduikt — een geur, een melodie, een oud gevoel. Mooier dan gewone herinnering.',uitspraak:'reh-mee-nees-THEN-thya',voorbeelden:[{es:'Una reminiscencia de infancia.',nl:'Een herinnering aan de kindertijd.'},{es:'La canción evocó reminiscencias.',nl:'Het lied riep reminiscenties op.'}]},
+    {woord:'lamento',woordsoort:'zelfstandig naamwoord (m)',vertaling:'klacht / rouwkreet / lamentatie',uitleg:'Een lamento is een uiting van verdriet of verlies — in muziek, poëzie of gewone spraak. Expressiever dan een zucht, minder dan een schreeuw.',uitspraak:'lah-MEN-to',voorbeelden:[{es:'Un lamento profundo.',nl:'Een diepe klacht.'},{es:'El flamenco está lleno de lamentos.',nl:'De flamenco zit vol lamentaties.'}]},
+    {woord:'penumbra',woordsoort:'zelfstandig naamwoord (v)',vertaling:'schemerduister / halfduister',uitleg:'Penumbra is het halfduister — niet helemaal donker, niet helemaal licht. Vaak gebruikt als metafoor voor een gemoedstoestand die tussen hoop en verdriet in hangt.',uitspraak:'peh-NOOM-brah',voorbeelden:[{es:'La habitación estaba en penumbra.',nl:'De kamer was gehuld in schemerduister.'},{es:'Vivía en la penumbra de sus recuerdos.',nl:'Ze leefde in het halfduister van haar herinneringen.'}]},
+    {woord:'transitorio',woordsoort:'bijvoeglijk naamwoord',vertaling:'tijdelijk / vergankelijk / voorbijgaand',uitleg:'Wat transitorio is, duurt niet. Alles is transitorio — vreugde, verdriet, momenten. Dit besef is zowel troostend als melancholisch.',uitspraak:'tran-see-TO-ryo',voorbeelden:[{es:'La tristeza es transitoria.',nl:'Verdriet is tijdelijk.'},{es:'Los momentos más bellos son transitorios.',nl:'De mooiste momenten zijn voorbijgaand.'}]},
+    {woord:'añejo',woordsoort:'bijvoeglijk naamwoord',vertaling:'oud / belegen / uit een vroegere tijd',uitleg:'Añejo beschrijft iets dat de tijd heeft overleefd en daardoor waardevoller is geworden — wijn, kaas, herinneringen. Niet negatief oud, maar rijp.',uitspraak:'ah-NYEH-ho',voorbeelden:[{es:'Un vino añejo.',nl:'Een belegen wijn.'},{es:'Recuerdos añejos de la infancia.',nl:'Oude herinneringen aan de kindertijd.'}]},
+    {woord:'recóndito',woordsoort:'bijvoeglijk naamwoord',vertaling:'verborgen / diep weggestopt',uitleg:'Recóndito beschrijft wat diep verstopt is — een plek, een herinnering, een gevoel. Lo más recóndito del alma = het diepste van de ziel.',uitspraak:'reh-KON-dee-to',voorbeelden:[{es:'En lo más recóndito de su corazón.',nl:'In het diepste van haar hart.'},{es:'Un lugar recóndito y olvidado.',nl:'Een verborgen en vergeten plek.'}]},
+    {woord:'marchitar',woordsoort:'werkwoord',vertaling:'verwelken / doen verdorren',uitleg:'Marchitar is verwelken — voor bloemen maar ook voor dromen, schoonheid, relaties. Las flores se marchitan heeft iets onontkoombaars en moois.',uitspraak:'mar-chee-TAR',voorbeelden:[{es:'Las flores se marchitan pronto.',nl:'De bloemen verwelken snel.'},{es:'El tiempo marchita la juventud.',nl:'De tijd doet de jeugd verwelken.'}]},
+    {woord:'crepúsculo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'schemering / avondrood',uitleg:'Crepúsculo is de schemering — het moment tussen dag en nacht. In Spaanse poëzie symbool voor vergankelijkheid, het einde van iets moois.',uitspraak:'kreh-POOS-koo-lo',voorbeelden:[{es:'El crepúsculo tiñó el cielo de naranja.',nl:'De schemering kleurde de hemel oranje.'},{es:'Una melancolía de crepúsculo.',nl:'Een schemerende melancholie.'}]},
+    {woord:'desvanecerse',woordsoort:'werkwoord (reflexief)',vertaling:'vervagen / verdwijnen / wegdriften',uitleg:'Desvanecerse is langzaam verdwijnen — zoals een droom bij het ontwaken, of een herinnering die vervaagt. Een prachtig en triest werkwoord.',uitspraak:'des-vah-neh-THER-seh',voorbeelden:[{es:'El recuerdo se fue desvaneciendo.',nl:'De herinnering begon te vervagen.'},{es:'Se desvanece como el humo.',nl:'Het vervluchtigt als rook.'}]},
+    {woord:'otoñal',woordsoort:'bijvoeglijk naamwoord',vertaling:'herfstachtig / herfstig',uitleg:'Otoñal beschrijft de sfeer van de herfst — warm maar vervaagd, kleurrijk maar afscheid nemend. Vaak metafoor voor een leven in zijn tweede helft.',uitspraak:'o-to-NYAL',voorbeelden:[{es:'Una tarde otoñal y melancólica.',nl:'Een herfstachtige, melancholische middag.'},{es:'Tiene una belleza otoñal.',nl:'Ze heeft een herfstachtige schoonheid.'}]},
+    {woord:'espectro',woordsoort:'zelfstandig naamwoord (m)',vertaling:'spook / spectrum / schaduw',uitleg:'Espectro is letterlijk een geest of spectrum, maar figuurlijk een aanwezige afwezigheid — iets dat er niet meer is maar nog steeds voelbaar.',uitspraak:'es-PEK-tro',voorbeelden:[{es:'El espectro de su recuerdo permanece.',nl:'Het spook van haar herinnering blijft.'},{es:'Un espectro del pasado.',nl:'Een schaduw uit het verleden.'}]},
+    {woord:'vacío',woordsoort:'zelfstandig naamwoord (m) / bijvoeglijk naamwoord',vertaling:'leegte / leeg',uitleg:'Vacío is de leegte — emotioneel, ruimtelijk, existentieel. Sentir un vacío is het gevoel dat er iets of iemand ontbreekt, en dat dat gemis een vorm heeft.',uitspraak:'vah-THEE-o',voorbeelden:[{es:'Siento un vacío sin ti.',nl:'Ik voel een leegte zonder jou.'},{es:'Una mirada vacía.',nl:'Een lege blik.'}]},
+    {woord:'quimera',woordsoort:'zelfstandig naamwoord (v)',vertaling:'hersenschim / ijdele droom / onmogelijke wens',uitleg:'Een quimera is iets dat je najaagt maar nooit zult bereiken — een droom die mooi is juist omdat hij onbereikbaar is.',uitspraak:'kee-MEH-rah',voorbeelden:[{es:'Perseguir quimeras es también vivir.',nl:'Dromen najagen is ook leven.'},{es:'Ese amor era una quimera.',nl:'Die liefde was een hersenschim.'}]},
+    {woord:'fugaz',woordsoort:'bijvoeglijk naamwoord',vertaling:'vluchtig / voorbijflitsend',uitleg:'Fugaz beschrijft wat snel voorbijgaat — een moment, een glimlach, een geluksgevoel. Mooi juist omdat het niet blijft.',uitspraak:'foo-GATH',voorbeelden:[{es:'Un momento fugaz pero eterno.',nl:'Een vluchtig maar eeuwig moment.'},{es:'Una sonrisa fugaz.',nl:'Een vluchtige glimlach.'}]},
+    {woord:'desencanto',woordsoort:'zelfstandig naamwoord (m)',vertaling:'teleurstelling / ontnuchtering',uitleg:'Desencanto is het verdwijnen van de betovering — als de werkelijkheid niet overeenkomt met wat je hoopte. Zachter dan verraad, pijnlijker dan teleurstelling.',uitspraak:'des-en-KAN-to',voorbeelden:[{es:'El desencanto llegó pronto.',nl:'De ontnuchtering kwam snel.'},{es:'Un aire de desencanto.',nl:'Een sfeer van teleurstelling.'}]},
+    {woord:'umbral',woordsoort:'zelfstandig naamwoord (m)',vertaling:'drempel / grens / beginpunt',uitleg:'Umbral is de drempel — tussen twee ruimtes, twee tijden, twee levens. Staan op een umbral is weten dat er iets eindigt en iets begint.',uitspraak:'oom-BRAL',voorbeelden:[{es:'En el umbral de una nueva etapa.',nl:'Op de drempel van een nieuwe fase.'},{es:'Se detuvo en el umbral de la puerta.',nl:'Ze bleef staan op de drempel van de deur.'}]},
+    {woord:'melancólico',woordsoort:'bijvoeglijk naamwoord',vertaling:'melancholisch',uitleg:'Beschrijft een stemming, persoon of melodie die een stille droefheid draagt. Niet depressief — melancholisch heeft ook schoonheid in zich.',uitspraak:'meh-lan-CO-lee-co',voorbeelden:[{es:'Una canción muy melancólica.',nl:'Een heel melancholisch lied.'},{es:'Tenía una mirada melancólica.',nl:'Ze had een melancholische blik.'}]},
+    {woord:'tenue',woordsoort:'bijvoeglijk naamwoord',vertaling:'fijn / zwak / nauwelijks voelbaar',uitleg:'Tenue beschrijft iets dat bijna niet voelbaar is — een licht, een geur, een gevoel. Niet afwezig, maar ook niet aanwezig — ergens tussenin.',uitspraak:'TEH-nweh',voorbeelden:[{es:'Una luz tenue al atardecer.',nl:'Een zwak licht bij zonsondergang.'},{es:'Un tenue aroma de flores.',nl:'Een nauwelijks voelbare bloemengeur.'}]},
+    {woord:'desvanecer',woordsoort:'werkwoord',vertaling:'vervagen / doen verdwijnen',uitleg:'Desvanecer is het actieve verdwijnen — licht dat vervaagt, geluid dat wegsterft, een herinnering die je niet kunt vasthouden hoe hard je ook probeert.',uitspraak:'des-vah-neh-THER',voorbeelden:[{es:'El sol empezó a desvanecer.',nl:'De zon begon te vervagen.'},{es:'Todo lo bello tiende a desvanecer.',nl:'Alles moois neigt om te verdwijnen.'}]},
+    {woord:'hondo',woordsoort:'bijvoeglijk naamwoord',vertaling:'diep / diepgaand',uitleg:'Hondo betekent diep — voor water maar ook voor gevoelens. Cante jondo is de diepe flamenco-zang, vol emotie en pijn. Hondo raakt de kern.',uitspraak:'ON-do',voorbeelden:[{es:'Un sentimiento muy hondo.',nl:'Een heel diep gevoel.'},{es:'El cante jondo llega al alma.',nl:'De diepe flamenco-zang raakt de ziel.'}]},
+    {woord:'resquicio',woordsoort:'zelfstandig naamwoord (m)',vertaling:'kier / spleet / sprankje',uitleg:'Letterlijk een kier in een deur — maar ook figuurlijk: un resquicio de esperanza is een sprankje hoop in het donker. Klein maar essentieel.',uitspraak:'res-KEE-thyo',voorbeelden:[{es:'Un resquicio de luz en la oscuridad.',nl:'Een sprankje licht in het donker.'},{es:'Aún queda un resquicio de esperanza.',nl:'Er is nog een sprankje hoop.'}]},
+    {woord:'lánguido',woordsoort:'bijvoeglijk naamwoord',vertaling:'lusteloos / mat / sloom',uitleg:'Lánguido beschrijft een staat van zwakheid, moeheid of traagheid — niet ziek, maar zonder energie of enthousiasme. Kan ook mooi zijn, als een lánguid gebaar.',uitspraak:'LAN-ghee-do',voorbeelden:[{es:'Una mirada lánguida.',nl:'Een lusteloze blik.'},{es:'El calor la dejó lánguida.',nl:'De hitte liet haar mat achter.'}]},
+    {woord:'pasajero',woordsoort:'bijvoeglijk naamwoord',vertaling:'voorbijgaand / tijdelijk',uitleg:'Pasajero beschrijft wat niet blijft — een fase, een gevoel, een pijn. Weten dat iets pasajero is maakt het draagbaarder.',uitspraak:'pah-sah-HEH-ro',voorbeelden:[{es:'La tristeza es pasajera.',nl:'Verdriet is voorbijgaand.'},{es:'Un amor pasajero.',nl:'Een tijdelijke liefde.'}]},
+    {woord:'gris',woordsoort:'bijvoeglijk naamwoord',vertaling:'grijs / saai / somber',uitleg:'Gris is letterlijk grijs, maar ook de kleur van een sombere stemming — un día gris, un humor gris. Niet zwart, niet wit — ergens tussenin.',uitspraak:'GREES',voorbeelden:[{es:'Un cielo gris y plomizo.',nl:'Een grijze, loodkleurige hemel.'},{es:'Tengo el ánimo gris hoy.',nl:'Ik voel me vandaag somber.'}]},
+    {woord:'ceniciento',woordsoort:'bijvoeglijk naamwoord',vertaling:'asgrijs / grauw / bleek',uitleg:'De kleur van as — ceniciento beschrijft een tint of sfeer die alle glans heeft verloren. Grauw en mat, maar met een poëtische klank.',uitspraak:'theh-nee-THYEN-to',voorbeelden:[{es:'Un amanecer ceniciento.',nl:'Een asgrijze dageraad.'},{es:'Tenía un aspecto ceniciento.',nl:'Ze zag er grauw en bleek uit.'}]},
+    {woord:'desolado',woordsoort:'bijvoeglijk naamwoord',vertaling:'troosteloos / verlaten / in diepe pijn',uitleg:'Desolado is de toestand van complete verlatenheid — van een plek of een persoon. Troosteloos en leeg, maar met een indrukwekkend soort waardigheid.',uitspraak:'deh-so-LAH-do',voorbeelden:[{es:'Se sentía desolada tras la pérdida.',nl:'Ze voelde zich troosteloos na het verlies.'},{es:'Un paisaje desolado y hermoso.',nl:'Een troosteloos en mooi landschap.'}]},
+    {woord:'añorar',woordsoort:'werkwoord',vertaling:'missen / verlangen naar',uitleg:'Añorar is het werkwoord van añoranza — actief verlangen naar iets of iemand die er niet is. Zachter dan rouwen, meer dan gewoon missen.',uitspraak:'ah-nyo-RAR',voorbeelden:[{es:'Añoro aquellos tiempos.',nl:'Ik verlang naar die tijden.'},{es:'Añoro tu presencia.',nl:'Ik mis jouw aanwezigheid.'}]},
+    {woord:'espina',woordsoort:'zelfstandig naamwoord (v)',vertaling:'doorn / stekel / kwelling',uitleg:'Espina is letterlijk een doorn, maar ook een emotionele stekende pijn. Tener una espina clavada = een wond die maar niet geneest.',uitspraak:'es-PEE-nah',voorbeelden:[{es:'Tiene una espina clavada.',nl:'Ze draagt een kwelling in zich.'},{es:'Las rosas tienen espinas.',nl:'Rozen hebben doornen.'}]},
+    {woord:'saudade',woordsoort:'zelfstandig naamwoord (v) (leenwoord)',vertaling:'saudade — diep verlangen zonder naam',uitleg:'Portugees leenwoord dat in het Spaans is opgenomen. Beschrijft het diepste gevoel van gemis — iets dat je mist maar misschien nooit hebt gehad. Onvertaalbaar en meest gebruikt in muziek.',uitspraak:'saw-DAH-deh',voorbeelden:[{es:'Una canción llena de saudade.',nl:'Een lied vol onuitsprekelijk verlangen.'},{es:'Siento saudade de algo que nunca tuve.',nl:'Ik verlang naar iets dat ik nooit had.'}]},
+    {woord:'quebranto',woordsoort:'zelfstandig naamwoord (m)',vertaling:'verdriet / gebrokenheid',uitleg:'Quebranto is het diepe verdriet dat iemand breekt — niet gewoon triest, maar echt gebroken van binnen. Komt van quebrar (breken).',uitspraak:'keh-BRAN-to',voorbeelden:[{es:'Sufrió un quebranto enorme.',nl:'Ze leed een enorme gebrokenheid.'},{es:'Su quebranto era evidente.',nl:'Haar verdriet was zichtbaar.'}]},
+    {woord:'íntimo',woordsoort:'bijvoeglijk naamwoord',vertaling:'intiem / diepgevoeld / persoonlijk',uitleg:'Íntimo beschrijft wat dicht bij het hart zit — niet voor buitenstaanders. Een íntimo verdriet, een íntima vreugde. Dingen die je niet zomaar deelt.',uitspraak:'EEN-tee-mo',voorbeelden:[{es:'Un dolor muy íntimo.',nl:'Een heel persoonlijk verdriet.'},{es:'Una conversación íntima.',nl:'Een intiem gesprek.'}]},
+    {woord:'hondo',woordsoort:'bijvoeglijk naamwoord',vertaling:'diep (van gevoel)',uitleg:'Hondo is de diepte die je voelt maar niet kunt zien. Wordt veel gebruikt in flamenco en poëzie om intensiteit van emotie te beschrijven.',uitspraak:'ON-do',voorbeelden:[{es:'Un sentimiento muy hondo.',nl:'Een diep gevoel.'},{es:'El cante jondo llega al alma.',nl:'De diepe zang raakt de ziel.'}]},
+    {woord:'sombra',woordsoort:'zelfstandig naamwoord (v)',vertaling:'schaduw',uitleg:'Sombra is schaduw — letterlijk en figuurlijk. Een sombra op iemands gezicht is een wolk van verdriet. Vivir en la sombra is leven in de marge, uit het licht.',uitspraak:'SOM-brah',voorbeelden:[{es:'Había una sombra de tristeza en su mirada.',nl:'Er lag een schaduw van verdriet in haar blik.'},{es:'La sombra cae al atardecer.',nl:'De schaduw valt bij zonsondergang.'}]},
+    {woord:'desvelo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'slapeloosheid / zorg / innerlijke onrust',uitleg:'Desvelo is letterlijk niet kunnen slapen — maar ook de innerlijke onrust of bezorgdheid die je wakker houdt. Tus desvelos son mis desvelos = jouw zorgen zijn mijn zorgen.',uitspraak:'des-VEH-lo',voorbeelden:[{es:'Las noches de desvelo son largas.',nl:'Slapeloze nachten zijn lang.'},{es:'Ese proyecto era su mayor desvelo.',nl:'Dat project was haar grootste zorg.'}]},
+    {woord:'ausencia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'afwezigheid / gemis',uitleg:'Ausencia is meer dan niet aanwezig zijn — het is de zichtbare leegte die iemand achterlaat. La ausencia de alguien querido pesa.',uitspraak:'ow-SEN-thya',voorbeelden:[{es:'Su ausencia se nota en todo.',nl:'Haar afwezigheid is overal voelbaar.'},{es:'La ausencia hace añorar.',nl:'Afwezigheid doet verlangen.'}]},
+    {woord:'ocaso',woordsoort:'zelfstandig naamwoord (m)',vertaling:'zonsondergang / ondergang / einde',uitleg:'Ocaso is de zonsondergang — maar ook het einde van een tijdperk, een leven of een relatie. Melancholisch en prachtig tegelijk.',uitspraak:'o-KAH-so',voorbeelden:[{es:'El ocaso tiñó el mar de rojo.',nl:'De zonsondergang kleurde de zee rood.'},{es:'El ocaso de una era.',nl:'Het einde van een tijdperk.'}]},
+    {woord:'duelo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'rouw / duel / verdriet',uitleg:'Duelo is rouw — de periode na verlies. Maar ook een duel (twee betekenissen!). In emotionele context is duelo het doorleven van verdriet.',uitspraak:'DWEH-lo',voorbeelden:[{es:'Está en duelo por la pérdida.',nl:'Ze is in rouw na het verlies.'},{es:'El duelo tarda en sanar.',nl:'Rouw heeft tijd om te helen.'}]},
+    {woord:'fragilidad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'kwetsbaarheid / breekbaarheid',uitleg:'Fragilidad is de breekbaarheid van mooie dingen — en ook van mensen. In de Spaanse literatuur wordt fragilidad gezien als een vorm van menselijkheid, niet als zwakheid.',uitspraak:'frah-hee-lee-DAD',voorbeelden:[{es:'La fragilidad de los recuerdos.',nl:'De breekbaarheid van herinneringen.'},{es:'Su fragilidad me conmueve.',nl:'Haar kwetsbaarheid raakt me.'}]},
+    {woord:'madrugada',woordsoort:'zelfstandig naamwoord (v)',vertaling:'de vroege ochtenduren / de nacht',uitleg:'Madrugada zijn de uren tussen middernacht en dageraad — een typisch Spaans woord voor de meest intieme en eenzame uren van de dag.',uitspraak:'mah-droo-GAH-dah',voorbeelden:[{es:'Lloró en la madrugada.',nl:'Ze huilde in de vroege ochtenduren.'},{es:'La madrugada es larga cuando no puedes dormir.',nl:'De nacht is lang als je niet kunt slapen.'}]},
+    {woord:'ceniza',woordsoort:'zelfstandig naamwoord (v)',vertaling:'as / rest van iets dat verbrand is',uitleg:'Ceniza is de as die overblijft — van een vuur, van een liefde, van een droom. Reducir a cenizas = tot as reduceren. Symbool voor definitief einde.',uitspraak:'theh-NEE-thah',voorbeelden:[{es:'Todo se redujo a cenizas.',nl:'Alles werd tot as gereduceerd.'},{es:'Las cenizas de un amor pasado.',nl:'De as van een vroegere liefde.'}]},
+    {woord:'etéreo',woordsoort:'bijvoeglijk naamwoord',vertaling:'etherisch / ongrijpbaar / hemels',uitleg:'Etéreo beschrijft iets dat zo licht en ongrijpbaar is dat het bijna niet van deze wereld lijkt. Mooie muziek, een herinnering, iemands manier van bewegen.',uitspraak:'eh-TEH-reh-o',voorbeelden:[{es:'Una belleza etérea.',nl:'Een etherische schoonheid.'},{es:'El recuerdo es etéreo.',nl:'De herinnering is ongrijpbaar.'}]},
+  ],
+  2: [ // Chill — rust, kalmte, stilte, ontspanning
+    {woord:'tranquilo',woordsoort:'bijvoeglijk naamwoord',vertaling:'rustig / kalm',uitleg:'Tranquilo beschrijft rust — van een plek, een persoon of een moment. Ook gebruikt als geruststelling: ¡Tranquilo! = geen zorgen. Een van de fijnste Spaanse woorden.',uitspraak:'tran-KEE-lo',voorbeelden:[{es:'El pueblo es muy tranquilo.',nl:'Het dorp is heel rustig.'},{es:'¡Tranquila, todo está bien!',nl:'Geen zorgen, alles is goed!'}]},
+    {woord:'sobremesa',woordsoort:'zelfstandig naamwoord (v)',vertaling:'natafelen',uitleg:'De tijd die je aan tafel doorbrengt na het eten, pratend en genietend. Een van Spanje\'s meest geliefde tradities — geen haast, geen telefoon, gewoon zijn.',uitspraak:'so-breh-MEH-sah',voorbeelden:[{es:'La sobremesa duró dos horas.',nl:'Het natafelen duurde twee uur.'},{es:'Me encanta la sobremesa del domingo.',nl:'Ik hou van het natafelen op zondag.'}]},
+    {woord:'remanso',woordsoort:'zelfstandig naamwoord (m)',vertaling:'rustige plek / oase van stilte',uitleg:'Letterlijk een rustig water in een rivier — figuurlijk een plek of moment van vrede te midden van chaos. Je eigen remanso vinden is essentieel.',uitspraak:'reh-MAN-so',voorbeelden:[{es:'Este café es un remanso de paz.',nl:'Dit café is een oase van rust.'},{es:'Encontré mi remanso en el parque.',nl:'Ik vond mijn rustplek in het park.'}]},
+    {woord:'apacible',woordsoort:'bijvoeglijk naamwoord',vertaling:'vredig / zacht / rustig',uitleg:'Apacible beschrijft een dag, persoon of sfeer die niets van je eist. Zacht en aangenaam, zonder spanning. Een apacible middag is perfect niets doen.',uitspraak:'ah-pah-THEE-bleh',voorbeelden:[{es:'Una tarde apacible de verano.',nl:'Een vredig zomermiddag.'},{es:'Tiene un carácter muy apacible.',nl:'Ze heeft een heel vredig karakter.'}]},
+    {woord:'holgazán',woordsoort:'bijvoeglijk naamwoord / zelfstandig naamwoord',vertaling:'luiaard / lui',uitleg:'Lui — maar gezegd met genegenheid op een zondag is het bijna een compliment. Holgazán zijn op de juiste dag is een levenskunst.',uitspraak:'ol-gah-THAN',voorbeelden:[{es:'Hoy me siento un poco holgazán.',nl:'Vandaag voel ik me een beetje lui.'},{es:'No seas holgazán todo el día.',nl:'Wees niet de hele dag een luiaard.'}]},
+    {woord:'pausado',woordsoort:'bijvoeglijk naamwoord',vertaling:'bedaard / weloverwogen / rustig van tempo',uitleg:'Pausado beschrijft iemand of iets dat zijn eigen tempo aanhoudt — niet langzaam, maar bewust. Praten op een pausado manier is met rust en bedachtzaamheid.',uitspraak:'pow-SAH-do',voorbeelden:[{es:'Habla de forma pausada.',nl:'Ze spreekt op een bedaarde manier.'},{es:'Llevamos un ritmo pausado.',nl:'We houden een rustig tempo aan.'}]},
+    {woord:'sereno',woordsoort:'bijvoeglijk naamwoord',vertaling:'sereen / helder / kalm',uitleg:'Sereno is de rust van een heldere nacht — absoluut en stil. In een persoon is serenidad een diepe, onverstoorde kalmte.',uitspraak:'seh-REH-no',voorbeelden:[{es:'Un lago sereno al amanecer.',nl:'Een sereen meer bij zonsopgang.'},{es:'Tiene una actitud muy serena.',nl:'Ze heeft een heel serene houding.'}]},
+    {woord:'quietud',woordsoort:'zelfstandig naamwoord (v)',vertaling:'stilte / rust / roerloosheid',uitleg:'Quietud is de absolute stilte — van een plek of van binnen. Niet verveling, maar een volledige rust die alle lawaai uitsluit.',uitspraak:'kyeh-TOOD',voorbeelden:[{es:'La quietud del campo me calma.',nl:'De stilte van het platteland kalmeert me.'},{es:'Buscaba la quietud interior.',nl:'Ze zocht innerlijke rust.'}]},
+    {woord:'lento',woordsoort:'bijvoeglijk naamwoord / bijwoord',vertaling:'langzaam / rustig van tempo',uitleg:'Lento is langzaam — en dat is prima. Ir lento no es ir mal. Langzaam gaan betekent dingen kunnen zien die je anders mist.',uitspraak:'LEN-to',voorbeelden:[{es:'Camina lento y disfruta.',nl:'Loop langzaam en geniet.'},{es:'Una melodía lenta y hermosa.',nl:'Een langzame, mooie melodie.'}]},
+    {woord:'sencillo',woordsoort:'bijvoeglijk naamwoord',vertaling:'eenvoudig / simpel / ongecompliceerd',uitleg:'Sencillo is positief — iets dat eenvoudig en eerlijk is, zonder poespas. Ook een persoon die sencillo is is nuchter en toegankelijk.',uitspraak:'sen-THEE-yo',voorbeelden:[{es:'Una vida sencilla pero plena.',nl:'Een eenvoudig maar vervuld leven.'},{es:'Es una persona muy sencilla.',nl:'Ze is een heel ongecompliceerd persoon.'}]},
+    {woord:'acoger',woordsoort:'werkwoord',vertaling:'verwelkomen / opnemen / een thuis geven',uitleg:'Acoger is meer dan welkom heten — het is iemand opnemen in je ruimte of hart, ze laten voelen dat ze erbij horen.',uitspraak:'ah-co-HER',voorbeelden:[{es:'La ciudad me acogió muy bien.',nl:'De stad verwelkomde me warm.'},{es:'Nos acogieron como familia.',nl:'Ze ontvingen ons als familie.'}]},
+    {woord:'paladejar',woordsoort:'werkwoord',vertaling:'proeven / langzaam genieten van',uitleg:'Paladejar is bewust en langzaam proeven — niet alleen van eten, maar van een moment, een gesprek, een gevoel. Neem de tijd om het te paladesjar.',uitspraak:'pah-lah-deh-HAR',voorbeelden:[{es:'Paladea cada sorbo de té.',nl:'Proef elk slokje thee langzaam.'},{es:'Hay que paladejar la vida.',nl:'Je moet het leven langzaam proeven.'}]},
+    {woord:'reposo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'rust / rustperiode',uitleg:'Reposo is de rust die je bewust neemt — meer dan slaap, meer dan stilzitten. Het lichaam en de geest laten herstellen is een kunst.',uitspraak:'reh-PO-so',voorbeelden:[{es:'Necesito un momento de reposo.',nl:'Ik heb even rust nodig.'},{es:'El reposo es necesario para el cuerpo.',nl:'Rust is noodzakelijk voor het lichaam.'}]},
+    {woord:'contemplar',woordsoort:'werkwoord',vertaling:'beschouwen / aanschouwen / overwegen',uitleg:'Contemplar is rustig kijken naar iets — een landschap, een gedachte, een mogelijkheid. Zonder haast, gewoon aanwezig zijn bij wat er is.',uitspraak:'con-tem-PLAR',voorbeelden:[{es:'Contempló el mar en silencio.',nl:'Ze beschouwde de zee in stilte.'},{es:'Me gusta contemplar el horizonte.',nl:'Ik hou ervan het verre horizon te aanschouwen.'}]},
+    {woord:'armonía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'harmonie',uitleg:'Armonía is de harmonie van klanken, kleuren of mensen. Als alles op zijn plek is en niets wringt — dat is armonía. Fijn om na te streven.',uitspraak:'ar-mo-NEE-ah',voorbeelden:[{es:'Vivir en armonía con la naturaleza.',nl:'In harmonie met de natuur leven.'},{es:'Hay una armonía especial entre ellos.',nl:'Er is een bijzondere harmonie tussen hen.'}]},
+    {woord:'parsimonia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'kalmte / bedachtzaamheid / het doen zonder haast',uitleg:'Con parsimonia betekent rustig en doordacht, zonder te jagen. Iemand die con parsimonia werkt neemt de tijd voor elk ding.',uitspraak:'par-see-MO-nee-ah',voorbeelden:[{es:'Lo hizo todo con parsimonia.',nl:'Ze deed alles rustig en bedachtzaam.'},{es:'La parsimonia es una forma de respeto.',nl:'Kalmte is een vorm van respect.'}]},
+    {woord:'recogimiento',woordsoort:'zelfstandig naamwoord (m)',vertaling:'inkeer / innerlijke rust / terugtrekking',uitleg:'Recogimiento is het naar binnen keren — bewust terugtrekken uit de drukte om bij jezelf te komen. Spiritueel en rustgevend.',uitspraak:'reh-co-hee-MYEN-to',voorbeelden:[{es:'Buscaba el recogimiento del convento.',nl:'Ze zocht de stilte van het klooster.'},{es:'Un momento de recogimiento interior.',nl:'Een moment van innerlijke inkeer.'}]},
+    {woord:'cadencia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'cadans / ritme / regelmatige gang',uitleg:'Cadencia is het ritme van iets — een lied, een wandeling, een gesprek. Een aangename cadencia is als een schommel die je meeneemt.',uitspraak:'kah-DEN-thya',voorbeelden:[{es:'Camina con una cadencia suave.',nl:'Ze loopt met een zachte cadans.'},{es:'La cadencia del mar me adormece.',nl:'Het ritme van de zee sust me in slaap.'}]},
+    {woord:'silencio',woordsoort:'zelfstandig naamwoord (m)',vertaling:'stilte',uitleg:'Silencio is meer dan afwezigheid van geluid — het is aanwezigheid van rust. In Spanje zegt men: hay silencios que dicen más que las palabras.',uitspraak:'see-LEN-thyo',voorbeelden:[{es:'Un silencio cómodo y cálido.',nl:'Een comfortabele en warme stilte.'},{es:'El silencio también es una respuesta.',nl:'Stilte is ook een antwoord.'}]},
+    {woord:'placidez',woordsoort:'zelfstandig naamwoord (v)',vertaling:'sereniteit / kalmte / rust',uitleg:'Placidez is de absolute kalmte — als er geen rimpels zijn op het water of in de geest. Een zeldzame en waardevolle toestand.',uitspraak:'plah-thee-DETH',voorbeelden:[{es:'La placidez del lago me tranquiliza.',nl:'De kalmte van het meer stelt me gerust.'},{es:'Vive con una placidez envidiable.',nl:'Ze leeft met een benijdenswaardige sereniteit.'}]},
+    {woord:'cobijo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'beschutting / schuilplaats / veiligheid',uitleg:'Cobijo is de beschutting die je zoekt als je moe bent van de wereld. Een plek, een persoon of een moment die je beschermt.',uitspraak:'co-BEE-ho',voorbeelden:[{es:'Encontró cobijo en su hogar.',nl:'Ze vond beschutting in haar thuis.'},{es:'Busco cobijo en la música.',nl:'Ik zoek beschutting in muziek.'}]},
+    {woord:'reposado',woordsoort:'bijvoeglijk naamwoord',vertaling:'rustig / kalm / bedaard',uitleg:'Reposado beschrijft iemand of iets dat zijn energie heeft gevonden — niet moe, maar tot rust gekomen. Een reposado gesprek is langzaam en aangenaam.',uitspraak:'reh-po-SAH-do',voorbeelden:[{es:'Un vino reposado y elegante.',nl:'Een rustige, elegante wijn.'},{es:'Tiene un carácter reposado.',nl:'Ze heeft een bedaard karakter.'}]},
+    {woord:'descanso',woordsoort:'zelfstandig naamwoord (m)',vertaling:'rust / pauze / rustpunt',uitleg:'Descanso is de pauze die je lichaam en geest nodig hebben. In Spanje is descanso heilig — de siësta bestaat niet voor niets.',uitspraak:'des-KAN-so',voorbeelden:[{es:'Me merezco un descanso.',nl:'Ik verdien een rust.'},{es:'El descanso es parte del trabajo.',nl:'Rust is onderdeel van het werk.'}]},
+    {woord:'ameno',woordsoort:'bijvoeglijk naamwoord',vertaling:'aangenaam / prettig / gezellig',uitleg:'Ameno beschrijft een activiteit of plek die prettig en licht is — niets vermoeiends, gewoon fijn. Una velada amena = een aangename avond.',uitspraak:'ah-MEH-no',voorbeelden:[{es:'Una conversación muy amena.',nl:'Een heel aangenaam gesprek.'},{es:'Pasamos una tarde amena.',nl:'We brachten een prettige middag door.'}]},
+    {woord:'relajado',woordsoort:'bijvoeglijk naamwoord',vertaling:'ontspannen / relaxed',uitleg:'Relajado is het Spaanse "relaxed" — ontspannen van lichaam en geest. Estar relajado is de toestand die je wil bereiken na een lange dag.',uitspraak:'reh-lah-HAH-do',voorbeelden:[{es:'Se le ve muy relajada.',nl:'Ze ziet er heel ontspannen uit.'},{es:'Un ambiente relajado y acogedor.',nl:'Een ontspannen en gastvrij sfeer.'}]},
+    {woord:'suave',woordsoort:'bijvoeglijk naamwoord',vertaling:'zacht / mild / glad',uitleg:'Suave is de zachtheid — van stof, van muziek, van een stem, van een karakter. Niet zwak, maar aangenaam en teder.',uitspraak:'SWAH-veh',voorbeelden:[{es:'Una música suave y relajante.',nl:'Zachte, ontspannende muziek.'},{es:'Tiene una voz muy suave.',nl:'Ze heeft een heel zachte stem.'}]},
+    {woord:'morosidad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'traagheid / bewust vertragen',uitleg:'Morosidad (in positieve zin) is de bewuste traagheid — de kunst van niet haasten. Vergelijkbaar met het Italiaanse "dolce far niente".',uitspraak:'mo-ro-see-DAD',voorbeelden:[{es:'Con morosidad placentera.',nl:'Met aangename traagheid.'},{es:'La morosidad del domingo.',nl:'De traagheid van een zondag.'}]},
+    {woord:'abrigo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'warmte / beschutting / jas',uitleg:'Abrigo is letterlijk een jas, maar ook de warmte en bescherming van een thuis, een persoon of een dekentje. Al abrigo del hogar = in de warmte van thuis.',uitspraak:'ah-BREE-go',voorbeelden:[{es:'Al abrigo de la chimenea.',nl:'In de warmte van de open haard.'},{es:'Busco el abrigo de tu compañía.',nl:'Ik zoek de beschutting van jouw gezelschap.'}]},
+    {woord:'plácido',woordsoort:'bijvoeglijk naamwoord',vertaling:'rustig / sereen / vriendelijk',uitleg:'Plácido beschrijft een absolute, onverstoorde rust. Een plácido meer heeft geen rimpelingen. Een plácida persoon heeft een serene kalmte.',uitspraak:'PLAH-thee-do',voorbeelden:[{es:'Un domingo plácido y sin prisa.',nl:'Een rustige zondag zonder haast.'},{es:'Un sueño plácido.',nl:'Een serene slaap.'}]},
+    {woord:'ensoñación',woordsoort:'zelfstandig naamwoord (v)',vertaling:'dagdroom / mijmering',uitleg:'Ensoñación is de staat van dagdromen — ergens anders zijn met je gedachten, op een prettige manier. Niet afwezig, maar in je eigen wereld.',uitspraak:'en-son-ya-THYON',voorbeelden:[{es:'Perdida en una ensoñación.',nl:'Verloren in een dagdroom.'},{es:'Un estado de ensoñación placentera.',nl:'Een toestand van prettige mijmering.'}]},
+    {woord:'ralentizar',woordsoort:'werkwoord',vertaling:'vertragen / afremmen',uitleg:'Ralentizar is bewust vertragen — het tempo terugschroeven om meer te zien en te voelen. De wereld gaat sneller als jij langzamer gaat.',uitspraak:'rah-len-tee-THAR',voorbeelden:[{es:'Hay que ralentizar el ritmo de vida.',nl:'Het tempo van het leven moet vertraagd worden.'},{es:'Ralentiza y disfruta.',nl:'Vertrag en geniet.'}]},
+    {woord:'alivio',woordsoort:'zelfstandig naamwoord (m)',vertaling:'verlichting / opluchting',uitleg:'Alivio is het gevoel als een last van je schouders valt. Niet geluk, maar de afwezigheid van spanning — en dat is soms nog fijner.',uitspraak:'ah-LEE-vyo',voorbeelden:[{es:'¡Qué alivio!',nl:'Wat een opluchting!'},{es:'Siento un gran alivio.',nl:'Ik voel een grote verlichting.'}]},
+    {woord:'fluir',woordsoort:'werkwoord',vertaling:'stromen / vloeien / in flow zijn',uitleg:'Fluir is stromen — water dat zijn weg vindt, maar ook een persoon die in flow is. Cuando todo fluye, nada cuesta. Als alles stroomt, kost niets moeite.',uitspraak:'floo-EER',voorbeelden:[{es:'Cuando todo fluye, es maravilloso.',nl:'Als alles stroomt, is het prachtig.'},{es:'La conversación fluyó con facilidad.',nl:'Het gesprek vloeide makkelijk.'}]},
+    {woord:'calma',woordsoort:'zelfstandig naamwoord (v)',vertaling:'kalmte / rust',uitleg:'Calma is het simpelste woord voor rust. Con calma = rustig aan. Mantén la calma = blijf kalm. Een universeel Spaans advies.',uitspraak:'KAL-mah',voorbeelden:[{es:'Con calma todo se resuelve.',nl:'Met kalmte lost alles zich op.'},{es:'Hay una calma especial en el campo.',nl:'Er heerst een bijzondere rust op het platteland.'}]},
+    {woord:'ocio',woordsoort:'zelfstandig naamwoord (m)',vertaling:'vrije tijd / ontspanning',uitleg:'Ocio is vrije tijd — maar in het Spaans heeft het een positieve waarde. Tiempo de ocio is niet de tijd dat je niets doet, maar de tijd die van jou is.',uitspraak:'O-thyo',voorbeelden:[{es:'El ocio también es necesario.',nl:'Vrije tijd is ook noodzakelijk.'},{es:'¿Qué haces en tu tiempo de ocio?',nl:'Wat doe je in je vrije tijd?'}]},
+    {woord:'dicha',woordsoort:'zelfstandig naamwoord (v)',vertaling:'geluk / zaligheid / vreugde',uitleg:'Dicha is een diepe, stille vorm van geluk — niet uitbundig maar volmaakt. La dicha de las cosas simples = het geluk van eenvoudige dingen.',uitspraak:'DEE-chah',voorbeelden:[{es:'La dicha de estar en casa.',nl:'Het geluk van thuis zijn.'},{es:'Una sensación de dicha pura.',nl:'Een gevoel van zuivere zaligheid.'}]},
+    {woord:'bienestar',woordsoort:'zelfstandig naamwoord (m)',vertaling:'welzijn / welbevinden / comfort',uitleg:'Bienestar is het gevoel dat het goed met je gaat — lichaam en geest in balans. Promover el bienestar is zorgen voor jezelf en anderen.',uitspraak:'byen-es-TAR',voorbeelden:[{es:'El bienestar es más que la salud.',nl:'Welzijn is meer dan gezondheid.'},{es:'Busco el bienestar en las pequeñas cosas.',nl:'Ik zoek welzijn in kleine dingen.'}]},
+    {woord:'pereza',woordsoort:'zelfstandig naamwoord (v)',vertaling:'luiheid / traagheid',uitleg:'Pereza is luiheid — maar op de juiste dag is het heilig. Tener pereza op een zondag is geen zonde maar een levenskunst.',uitspraak:'peh-REH-tha',voorbeelden:[{es:'Hoy tengo una pereza enorme.',nl:'Vandaag heb ik enorme zin om lui te zijn.'},{es:'La pereza del domingo es sagrada.',nl:'De luiheid van zondag is heilig.'}]},
+    {woord:'amanecer',woordsoort:'zelfstandig naamwoord (m) / werkwoord',vertaling:'dageraad / ochtendgloren / aanbreken van de dag',uitleg:'Amanecer is zowel het zelfstandig naamwoord (dageraad) als het werkwoord (dagbreken). Er is iets rustgevends aan de stilte van een nieuw begin.',uitspraak:'ah-mah-neh-THER',voorbeelden:[{es:'El amanecer fue precioso.',nl:'De dageraad was prachtig.'},{es:'Amaneció con niebla.',nl:'De dag brak aan met mist.'}]},
+    {woord:'cómodo',woordsoort:'bijvoeglijk naamwoord',vertaling:'comfortabel / gemakkelijk',uitleg:'Cómodo is comfortabel — van een stoel, een situatie, een relatie. Sentirse cómodo con alguien is je op je gemak voelen bij iemand.',uitspraak:'CO-mo-do',voorbeelden:[{es:'Me siento cómoda contigo.',nl:'Ik voel me op mijn gemak bij jou.'},{es:'Una silla muy cómoda.',nl:'Een heel comfortabele stoel.'}]},
+    {woord:'dulce',woordsoort:'bijvoeglijk naamwoord',vertaling:'zoet / teder / lief',uitleg:'Dulce is zoet — van smaak, maar ook van karakter, stem of herinnering. Un dulce recuerdo = een zoete herinnering. Dulce is nooit scherp.',uitspraak:'DOOL-theh',voorbeelden:[{es:'Tiene una voz muy dulce.',nl:'Ze heeft een heel tedere stem.'},{es:'Un sueño dulce.',nl:'Een zoete droom.'}]},
+    {woord:'sosiego',woordsoort:'zelfstandig naamwoord (m)',vertaling:'kalmte / vrede / gemoedsrust',uitleg:'Sosiego is de kalmte van geest die je bereikt als alles stil is — van buiten en van binnen. Zeldzamer dan gewone rust, dieper dan gewone stilte.',uitspraak:'so-SYEH-go',voorbeelden:[{es:'Encontré el sosiego en la naturaleza.',nl:'Ik vond gemoedsrust in de natuur.'},{es:'Vive con sosiego.',nl:'Ze leeft in innerlijke vrede.'}]},
+    {woord:'cadencioso',woordsoort:'bijvoeglijk naamwoord',vertaling:'ritmisch / cadensrijk',uitleg:'Beschrijft iets dat een aangenaam, regelmatig ritme heeft — muziek, een stem, de zee. Cadencioso klinkt al mooi terwijl je het zegt.',uitspraak:'kah-den-THYO-so',voorbeelden:[{es:'Un balanceo cadencioso.',nl:'Een ritmisch schommelen.'},{es:'Una voz cadenciosa y calmada.',nl:'Een ritmische, kalme stem.'}]},
+  ],
+  3: [ // Us two — verbondenheid, vertrouwen, vriendschap, samen
+    {woord:'complicidad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'verstandhouding / medeplichtigheid',uitleg:'Complicidad is de geheime taal tussen twee mensen die elkaar begrijpen zonder woorden. De beste soort verbinding.',uitspraak:'com-plee-thee-DAD',voorbeelden:[{es:'Entre ellos hay una complicidad especial.',nl:'Tussen hen is een bijzondere verstandhouding.'},{es:'Una mirada llena de complicidad.',nl:'Een blik vol gedeeld begrip.'}]},
+    {woord:'cómplice',woordsoort:'zelfstandig naamwoord (m/v)',vertaling:'medeplichtige / bondgenoot',uitleg:'Je cómplice is degene die je avonturen deelt en je geheimen bewaart. In de warme zin van het woord — niet crimineel maar vertrouwd.',uitspraak:'COM-plee-theh',voorbeelden:[{es:'Eres mi cómplice en todo.',nl:'Jij bent mijn bondgenoot in alles.'},{es:'Una sonrisa cómplice.',nl:'Een wetende glimlach.'}]},
+    {woord:'querencia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'thuisgevoel / verlangen naar een plek',uitleg:'Querencia is de plek of persoon waar je je veilig voelt, waar je naartoe terugkeert. Je anker. Niet vertaalbaar in één woord.',uitspraak:'keh-REN-thya',voorbeelden:[{es:'Esta ciudad es mi querencia.',nl:'Deze stad is mijn thuisgevoel.'},{es:'Tú eres mi querencia.',nl:'Jij bent waar ik me thuis voel.'}]},
+    {woord:'vínculo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'band / verbinding / relatie',uitleg:'Een vínculo is de emotionele band tussen mensen — diep, soms onzichtbaar maar altijd voelbaar. Niet alle vínculos hebben een verklaring.',uitspraak:'VEEN-coo-lo',voorbeelden:[{es:'Tenemos un vínculo muy fuerte.',nl:'We hebben een heel sterke band.'},{es:'Un vínculo que dura toda la vida.',nl:'Een band die een leven lang duurt.'}]},
+    {woord:'confianza',woordsoort:'zelfstandig naamwoord (v)',vertaling:'vertrouwen / openheid',uitleg:'Confianza is vertrouwen — maar ook de gemakkelijkheid die je voelt bij iemand die je volledig vertrouwt. Tener confianza met iemand betekent jezelf kunnen zijn.',uitspraak:'con-FYAN-tha',voorbeelden:[{es:'Tenemos mucha confianza.',nl:'We hebben veel vertrouwen in elkaar.'},{es:'Puedo hablar con total confianza.',nl:'Ik kan met complete openheid praten.'}]},
+    {woord:'azar',woordsoort:'zelfstandig naamwoord (m)',vertaling:'toeval / lot',uitleg:'Azar is het mooie toeval dat mensen bij elkaar brengt. Niet geluk of pech — maar iets poëtischers dan dat.',uitspraak:'ah-THAR',voorbeelden:[{es:'El azar nos unió.',nl:'Het toeval bracht ons samen.'},{es:'Los caminos del azar son misteriosos.',nl:'De wegen van het toeval zijn mysterieus.'}]},
+    {woord:'afecto',woordsoort:'zelfstandig naamwoord (m)',vertaling:'genegenheid / warmte / tederheid',uitleg:'Afecto is de genegenheid die je voelt voor mensen dicht bij je — niet de intense passie van liefde, maar de warme constante nabijheid.',uitspraak:'ah-FEK-to',voorbeelden:[{es:'Le tengo mucho afecto.',nl:'Ik heb veel genegenheid voor haar.'},{es:'Un gesto lleno de afecto.',nl:'Een gebaar vol tederheid.'}]},
+    {woord:'cariño',woordsoort:'zelfstandig naamwoord (m)',vertaling:'genegenheid / liefde / schatje',uitleg:'Cariño is de dagelijkse tederheid — de soort liefde die je voelt voor vrienden, familie en geliefden tegelijk. Ook een troetelnaam.',uitspraak:'kah-REE-nyo',voorbeelden:[{es:'Te tengo mucho cariño.',nl:'Ik voel veel warmte voor jou.'},{es:'¡Ven aquí, cariño!',nl:'Kom hier, schatje!'}]},
+    {woord:'sintonía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'afstemming / op dezelfde golflengte zijn',uitleg:'Estar en sintonía con alguien is op dezelfde golflengte zitten — dezelfde humor, dezelfde stiltes begrijpen, hetzelfde voelen op hetzelfde moment.',uitspraak:'seen-to-NEE-ah',voorbeelden:[{es:'Estamos en total sintonía.',nl:'We zijn volledig op dezelfde golflengte.'},{es:'Hay una sintonía especial entre nosotros.',nl:'Er is een bijzondere afstemming tussen ons.'}]},
+    {woord:'empatía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'empathie / inlevingsvermogen',uitleg:'Empatía is het vermogen je in een ander in te voelen — hun vreugde jouw vreugde, hun pijn jouw pijn. De basis van echte verbinding.',uitspraak:'em-pah-TEE-ah',voorbeelden:[{es:'Tiene una empatía increíble.',nl:'Ze heeft een ongelooflijk inlevingsvermogen.'},{es:'La empatía nos une.',nl:'Empathie verbindt ons.'}]},
+    {woord:'lealtad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'loyaliteit / trouw',uitleg:'Lealtad is trouw in goede en slechte tijden. Niet blindelings, maar bewust — je kiest ervoor om te blijven.',uitspraak:'leh-al-TAD',voorbeelden:[{es:'Su lealtad nunca falla.',nl:'Haar loyaliteit wankelt nooit.'},{es:'La lealtad es la base de la amistad.',nl:'Loyaliteit is de basis van vriendschap.'}]},
+    {woord:'amistad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'vriendschap',uitleg:'Amistad is een van de meest gewaardeerde dingen in de Spaanse cultuur. Echte vriendschap is diep en trouw — la amistad verdadera es para siempre.',uitspraak:'ah-mees-TAD',voorbeelden:[{es:'La amistad es un tesoro.',nl:'Vriendschap is een schat.'},{es:'Nuestra amistad es para siempre.',nl:'Onze vriendschap is voor altijd.'}]},
+    {woord:'compadreo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'kameraadschap / vriendschapsbanden',uitleg:'Compadreo beschrijft de solidariteit en warmte tussen goede vrienden of mensen die door dezelfde ervaringen verbonden zijn.',uitspraak:'com-pah-DREH-o',voorbeelden:[{es:'Hay un buen compadreo en el grupo.',nl:'Er is een goede kameraadschap in de groep.'},{es:'El compadreo les unía.',nl:'De kameraadschap bond hen.'}]},
+    {woord:'compartir',woordsoort:'werkwoord',vertaling:'delen / samen beleven',uitleg:'Compartir is meer dan iets doorgeven — het is samen iets beleven, er samen in staan. Compartir un momento vale más que mil palabras.',uitspraak:'com-par-TEER',voorbeelden:[{es:'Me alegra compartir esto contigo.',nl:'Ik ben blij dit met jou te delen.'},{es:'Compartir es vivir doble.',nl:'Delen is dubbel leven.'}]},
+    {woord:'encuentro',woordsoort:'zelfstandig naamwoord (m)',vertaling:'ontmoeting / hereniging',uitleg:'Een encuentro is een ontmoeting die telt — niet toevallig maar betekenisvol. Twee mensen die elkaar vinden op het juiste moment.',uitspraak:'en-KWEN-tro',voorbeelden:[{es:'Fue un encuentro inesperado y bonito.',nl:'Het was een onverwachte en mooie ontmoeting.'},{es:'El encuentro me llenó de alegría.',nl:'De ontmoeting vervulde me met vreugde.'}]},
+    {woord:'complicar',woordsoort:'werkwoord (als idioom)',vertaling:'het ingewikkeld maken (als compliment)',uitleg:'Hacerse complicados can be a good thing — complexe, gelaagde verbindingen zijn dieper dan simpele. Maar in goede zin.',uitspraak:'com-plee-KAR',voorbeelden:[{es:'Nos complicamos juntos.',nl:'We maken het samen ingewikkeld — op de beste manier.'},{es:'No todo tiene que ser fácil.',nl:'Niet alles hoeft makkelijk te zijn.'}]},
+    {woord:'hermandad',woordsoort:'zelfstandig naamwoord (v)',vertaling:'broeder-/zusterschap / hechte verbinding',uitleg:'Hermandad is de band die sterker is dan vriendschap — als familie, maar gekozen. Niet bloed maar keuze.',uitspraak:'er-man-DAD',voorbeelden:[{es:'Existe una hermandad entre ellas.',nl:'Er bestaat een zusterschap tussen hen.'},{es:'La hermandad se forja en las dificultades.',nl:'Broederschap wordt gesmeed in moeilijke tijden.'}]},
+    {woord:'entendimiento',woordsoort:'zelfstandig naamwoord (m)',vertaling:'begrip / verstandhouding / wederzijds verstaan',uitleg:'Entendimiento is het wederzijdse begrip tussen twee mensen — niet alleen intellectueel maar ook emotioneel. Als je elkaar écht begrijpt.',uitspraak:'en-ten-dee-MYEN-to',voorbeelden:[{es:'Hay un entendimiento perfecto entre ellos.',nl:'Er is een perfect wederzijds begrip tussen hen.'},{es:'El entendimiento hace fuerte la relación.',nl:'Begrip maakt de relatie sterk.'}]},
+    {woord:'cobijo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'beschutting / veiligheid / thuis',uitleg:'Cobijo is de beschutting die je geeft en ontvangt in een echte vriendschap of liefde — een veilige plek waar je jezelf kunt zijn.',uitspraak:'co-BEE-ho',voorbeelden:[{es:'Ella es mi cobijo.',nl:'Zij is mijn veilige haven.'},{es:'Encontré cobijo en su amistad.',nl:'Ik vond beschutting in haar vriendschap.'}]},
+    {woord:'recuerdo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'herinnering / souvenir',uitleg:'Recuerdo is een herinnering — maar ook een souvenir, iets dat je meeneemt van een plek of persoon. Guardar un buen recuerdo = een goede herinnering bewaren.',uitspraak:'reh-KWER-do',voorbeelden:[{es:'Guardo un recuerdo muy bonito de eso.',nl:'Ik bewaar een heel mooie herinnering daaraan.'},{es:'Los recuerdos compartidos nos unen.',nl:'Gedeelde herinneringen verbinden ons.'}]},
+    {woord:'presente',woordsoort:'bijvoeglijk naamwoord / zelfstandig naamwoord',vertaling:'aanwezig / het huidige moment',uitleg:'Presente is aanwezig — in het moment, bij de ander. Estar presente is een cadeau: je bent er écht, niet afgeleid.',uitspraak:'preh-SEN-teh',voorbeelden:[{es:'Estar presente es un regalo.',nl:'Aanwezig zijn is een cadeau.'},{es:'Siempre está presente cuando la necesito.',nl:'Ze is er altijd als ik haar nodig heb.'}]},
+    {woord:'alma gemela',woordsoort:'zelfstandig naamwoord (v)',vertaling:'zielsverwant',uitleg:'Alma gemela is een zielsverwant — iemand die lijkt alsof ze altijd in jouw leven had moeten zijn. Niet per se romantisch, ook vriendschappelijk.',uitspraak:'AL-mah heh-MEH-lah',voorbeelden:[{es:'Creo que es mi alma gemela.',nl:'Ik denk dat ze mijn zielsverwant is.'},{es:'Las almas gemelas se encuentran.',nl:'Zielsverwanten vinden elkaar.'}]},
+    {woord:'incondicional',woordsoort:'bijvoeglijk naamwoord',vertaling:'onvoorwaardelijk',uitleg:'Amor incondicional of amistad incondicional is liefde of vriendschap zonder voorwaarden — je blijft, ongeacht wat er komt.',uitspraak:'een-con-dee-thyo-NAL',voorbeelden:[{es:'Su apoyo siempre es incondicional.',nl:'Haar steun is altijd onvoorwaardelijk.'},{es:'El amor incondicional es el más verdadero.',nl:'Onvoorwaardelijke liefde is de meest echte.'}]},
+    {woord:'abrazo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'omhelzing / knuffel',uitleg:'Een abrazo is meer dan een knuffel — in Spanje is het een hartelijke omhelzing die warmte, verbinding en aanwezigheid uitdrukt.',uitspraak:'ah-BRAH-tho',voorbeelden:[{es:'Te mando un abrazo enorme.',nl:'Ik stuur je een enorme omhelzing.'},{es:'Un abrazo vale más que mil palabras.',nl:'Een omhelzing zegt meer dan duizend woorden.'}]},
+    {woord:'codo con codo',woordsoort:'idioom',vertaling:'schouder aan schouder / zij aan zij',uitleg:'Letterlijk "elleboog aan elleboog" — idioom voor samen iets doen, naast elkaar, als een team. Niet voor elkaar, maar mét elkaar.',uitspraak:'CO-do con CO-do',voorbeelden:[{es:'Trabajamos codo con codo.',nl:'We werken schouder aan schouder.'},{es:'Siempre a tu lado, codo con codo.',nl:'Altijd naast je, zij aan zij.'}]},
+    {woord:'apoyo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'steun / ondersteuning',uitleg:'Apoyo is de steun die je geeft als iemand het nodig heeft. Contar con alguien = op iemand kunnen rekenen. Apoyo is dat vertrouwen.',uitspraak:'ah-PO-yo',voorbeelden:[{es:'Gracias por tu apoyo incondicional.',nl:'Dank je voor je onvoorwaardelijke steun.'},{es:'Siempre puedo contar con su apoyo.',nl:'Ik kan altijd op haar steun rekenen.'}]},
+    {woord:'compenetración',woordsoort:'zelfstandig naamwoord (v)',vertaling:'samenspel / perfecte afstemming',uitleg:'Compenetración is de perfecte afstemming tussen twee mensen — ze begrijpen elkaar zo goed dat ze als één geheel functioneren.',uitspraak:'com-peh-neh-trah-THYON',voorbeelden:[{es:'La compenetración entre ellas es perfecta.',nl:'De afstemming tussen hen is perfect.'},{es:'Tienen una gran compenetración.',nl:'Ze hebben een geweldige samenspel.'}]},
+    {woord:'nexo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'verbinding / schakel / band',uitleg:'Nexo is de schakel die twee dingen of mensen verbindt — een gemeenschappelijke ervaring, een geheime herinnering, een gedeelde waarde.',uitspraak:'NEK-so',voorbeelden:[{es:'Hay un nexo invisible entre nosotros.',nl:'Er is een onzichtbare band tussen ons.'},{es:'La música es nuestro nexo.',nl:'Muziek is onze verbindende schakel.'}]},
+    {woord:'compaña',woordsoort:'zelfstandig naamwoord (v)',vertaling:'gezelschap / nabijheid',uitleg:'Compaña (verkorting van compañía) is het gezelschap van iemand die je dierbaar is. Soms is alleen de aanwezigheid van iemand al genoeg.',uitspraak:'com-PAN-ya',voorbeelden:[{es:'Me alegra tu compaña.',nl:'Je gezelschap maakt me blij.'},{es:'En buena compaña todo es mejor.',nl:'In goed gezelschap is alles beter.'}]},
+    {woord:'acuerdo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'overeenstemming / akkoord',uitleg:'De acuerdo = akkoord, het eens zijn. Maar acuerdo ook als "overeenstemming" — twee mensen die op dezelfde lijn zitten, het met elkaar eens zijn.',uitspraak:'ah-KWER-do',voorbeelden:[{es:'Estamos de acuerdo en todo.',nl:'We zijn het over alles eens.'},{es:'Llegaron a un acuerdo.',nl:'Ze kwamen tot overeenstemming.'}]},
+    {woord:'consuelo',woordsoort:'zelfstandig naamwoord (m)',vertaling:'troost / bemoediging',uitleg:'Consuelo is de troost die je aan iemand geeft in moeilijke momenten. Ser el consuelo de alguien is er zijn als het telt.',uitspraak:'con-SWEH-lo',voorbeelden:[{es:'Tu presencia es mi mayor consuelo.',nl:'Jouw aanwezigheid is mijn grootste troost.'},{es:'Encontró consuelo en su amistad.',nl:'Ze vond troost in haar vriendschap.'}]},
+    {woord:'compañía',woordsoort:'zelfstandig naamwoord (v)',vertaling:'gezelschap / bedrijf',uitleg:'Compañía is gezelschap in alle vormen. De beste compañía is de persoon bij wie je kunt zwijgen en toch niet alleen voelt.',uitspraak:'com-pan-YEE-ah',voorbeelden:[{es:'Me encanta tu compañía.',nl:'Ik hou van jouw gezelschap.'},{es:'En buena compañía el tiempo vuela.',nl:'In goed gezelschap vliegt de tijd.'}]},
+    {woord:'latido',woordsoort:'zelfstandig naamwoord (m)',vertaling:'hartslag / klopping',uitleg:'Latido is een hartslag — maar ook de polsslag van een moment of een relatie. Sentir el latido de algo = de levende kracht ervan voelen.',uitspraak:'lah-TEE-do',voorbeelden:[{es:'Los latidos del corazón no mienten.',nl:'Hartslagen liegen niet.'},{es:'Siento el latido de nuestra amistad.',nl:'Ik voel de hartslag van onze vriendschap.'}]},
+    {woord:'resiliencia',woordsoort:'zelfstandig naamwoord (v)',vertaling:'veerkracht / aanpassingsvermogen',uitleg:'Resiliencia is de kracht om te herstellen na moeilijke momenten. Samen hebben mensen meer resiliencia — gedeeld verdriet is halver.',uitspraak:'reh-see-LYEN-thya',voorbeelden:[{es:'Nuestra amistad tiene mucha resiliencia.',nl:'Onze vriendschap heeft veel veerkracht.'},{es:'La resiliencia se construye juntos.',nl:'Veerkracht bouw je samen op.'}]},
+    {woord:'complicidad silenciosa',woordsoort:'uitdrukking',vertaling:'stille verstandhouding',uitleg:'De stille verstandhouding waarbij je niets hoeft te zeggen. Je kijkt elkaar aan en weet wat de ander denkt. De mooiste vorm van verbinding.',uitspraak:'com-plee-thee-DAD see-len-THY-o-sa',voorbeelden:[{es:'Había una complicidad silenciosa entre ellas.',nl:'Er was een stille verstandhouding tussen hen.'},{es:'Una mirada basta.',nl:'Één blik is genoeg.'}]},
+    {woord:'recíproco',woordsoort:'bijvoeglijk naamwoord',vertaling:'wederzijds / wederkerig',uitleg:'Recíproco beschrijft iets dat van beide kanten komt — respect, liefde, vertrouwen. De beste relaties zijn recíprocas.',uitspraak:'reh-THEE-pro-co',voorbeelden:[{es:'El respeto debe ser recíproco.',nl:'Respect moet wederzijds zijn.'},{es:'Un cariño recíproco y genuino.',nl:'Een wederzijdse en echte genegenheid.'}]},
+    {woord:'ternura',woordsoort:'zelfstandig naamwoord (v)',vertaling:'tederheid / zachtheid',uitleg:'Ternura is de tederheid die je voelt en toont naar iemand die je dierbaar is. Een blik, een gebaar, een stem — ternura zit in de details.',uitspraak:'ter-NOO-rah',voorbeelden:[{es:'Habla con una ternura especial.',nl:'Ze praat met een bijzondere tederheid.'},{es:'La ternura de su mirada me conmueve.',nl:'De tederheid van haar blik roert me.'}]},
+    {woord:'unión',woordsoort:'zelfstandig naamwoord (v)',vertaling:'verbinding / eenheid / unie',uitleg:'Unión is de verbinding die twee mensen of groepen tot iets groters maakt. La unión hace la fuerza — samen staan we sterker.',uitspraak:'oo-NYON',voorbeelden:[{es:'La unión entre ellas es admirable.',nl:'De verbinding tussen hen is bewonderenswaardig.'},{es:'La unión hace la fuerza.',nl:'Eendracht maakt macht.'}]},
+    {woord:'espontáneo',woordsoort:'bijvoeglijk naamwoord',vertaling:'spontaan / vanuit het hart',uitleg:'Espontáneo beschrijft dingen die vanuit het hart komen, zonder planning. De beste momenten zijn espontáneos.',uitspraak:'es-pon-TAH-neh-o',voorbeelden:[{es:'Un gesto espontáneo vale mucho.',nl:'Een spontaan gebaar is veel waard.'},{es:'Nos reímos de forma espontánea.',nl:'We lachen spontaan samen.'}]},
+  ],
+  4: [ // Su — bijzonderheid, authenticiteit, licht, warmte, moed
+    {woord:'especial',woordsoort:'bijvoeglijk naamwoord',vertaling:'bijzonder / speciaal',uitleg:'Especial is bijzonder — maar in het Spaans heeft het meer gewicht. Ser especial betekent dat je opvalt niet door wat je doet maar door wie je bent.',uitspraak:'es-peh-THYAL',voorbeelden:[{es:'Eres una persona muy especial.',nl:'Je bent een heel bijzonder persoon.'},{es:'Este momento es especial.',nl:'Dit moment is speciaal.'}]},
+    {woord:'auténtica',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'authentiek / echt',uitleg:'Het hoogste compliment in het Spaans — authentiek zijn betekent volledig, onverschrokken jezelf zijn. Zonder masker, zonder performance.',uitspraak:'ow-TEN-tee-kah',voorbeelden:[{es:'Es completamente auténtica.',nl:'Ze is volledig authentiek.'},{es:'La autenticidad es escasa.',nl:'Authenticiteit is zeldzaam.'}]},
+    {woord:'luz',woordsoort:'zelfstandig naamwoord (v)',vertaling:'licht',uitleg:'Iemand luz noemen is zeggen dat ze helderheid en warmte brengen. Ze verlichten de kamer zonder het te proberen.',uitspraak:'LOOTH',voorbeelden:[{es:'Eres la luz de la habitación.',nl:'Je bent het licht van de kamer.'},{es:'Su sonrisa llena de luz.',nl:'Haar glimlach vol licht.'}]},
+    {woord:'valiente',woordsoort:'bijvoeglijk naamwoord',vertaling:'dapper / moedig',uitleg:'Valiente is niet alleen fysiek dapper — het is ook eerlijk durven zijn, je kwetsbaar durven opstellen, opnieuw beginnen na een val.',uitspraak:'vah-LYEN-teh',voorbeelden:[{es:'Es una mujer muy valiente.',nl:'Ze is een heel dappere vrouw.'},{es:'Ser valiente es también decir la verdad.',nl:'Dapper zijn is ook de waarheid zeggen.'}]},
+    {woord:'entrañable',woordsoort:'bijvoeglijk naamwoord',vertaling:'dierbaar / hartelijk / innemend',uitleg:'Entrañable is een van de mooiste Spaanse woorden — iemand die zo dierbaar is dat ze rechtstreeks tot je hart doordringen. Niet vertaalbaar in één woord.',uitspraak:'en-trahn-YAH-bleh',voorbeelden:[{es:'Es una persona entrañable.',nl:'Ze is zo\'n liefdevol en dierbaar mens.'},{es:'Un recuerdo entrañable.',nl:'Een dierbare herinnering.'}]},
+    {woord:'sincera',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'oprecht / eerlijk',uitleg:'Iemand die sincera is meent precies wat ze zegt. Geen filter, geen performance — gewoon de waarheid, met mildheid.',uitspraak:'seen-THEH-rah',voorbeelden:[{es:'Es una amiga muy sincera.',nl:'Ze is een heel oprechte vriendin.'},{es:'Gracias por ser tan sincera.',nl:'Dank je voor je eerlijkheid.'}]},
+    {woord:'genuina',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'authentiek / oprecht / echt',uitleg:'Genuina is iets een stap verder dan sincera — het is echt in de kern, niet aangeleerd of aangenomen. Ze is gewoon wie ze is, altijd.',uitspraak:'heh-NWEE-nah',voorbeelden:[{es:'Su alegría es genuina.',nl:'Haar blijdschap is oprecht.'},{es:'Es una persona genuina y honesta.',nl:'Ze is een authentieke en eerlijke persoon.'}]},
+    {woord:'magnética',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'magnetisch / aantrekkelijk',uitleg:'Iemand met een magnetische aantrekkingskracht trekt anderen naar zich toe zonder het te proberen. Ze heeft iets dat je niet kunt negeren.',uitspraak:'mag-NEH-tee-kah',voorbeelden:[{es:'Tiene una personalidad magnética.',nl:'Ze heeft een magnetische persoonlijkheid.'},{es:'Su presencia es magnética.',nl:'Haar aanwezigheid is magnetisch.'}]},
+    {woord:'singular',woordsoort:'bijvoeglijk naamwoord',vertaling:'uniek / bijzonder / uitzonderlijk',uitleg:'Singular betekent dat iemand een soort op zichzelf is — niet te vergelijken, niet te vervangen. Het hoogste compliment voor iemand die echt uniek is.',uitspraak:'seen-goo-LAR',voorbeelden:[{es:'Es una persona singular.',nl:'Ze is een uniek persoon.'},{es:'Un talento singular e irrepetible.',nl:'Een uniek en onherhaalbaar talent.'}]},
+    {woord:'irrepetible',woordsoort:'bijvoeglijk naamwoord',vertaling:'eenmalig / niet te herhalen',uitleg:'Irrepetible is wat er maar één keer is — een moment, een dag, een persoon. Je kunt het niet kopiëren of opnieuw maken.',uitspraak:'ee-reh-peh-TEE-bleh',voorbeelden:[{es:'Eres irrepetible.',nl:'Jij bent eenmalig.'},{es:'Un momento irrepetible.',nl:'Een moment dat nooit herhaald kan worden.'}]},
+    {woord:'luminosa',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'stralend / lichtend',uitleg:'Luminosa is iemand die licht uitstraalt — van binnen. Niet per se vrolijk altijd, maar altijd met een innerlijk licht.',uitspraak:'loo-mee-NO-sah',voorbeelden:[{es:'Tiene una sonrisa luminosa.',nl:'Ze heeft een stralende glimlach.'},{es:'Una mirada luminosa e inteligente.',nl:'Een stralende en intelligente blik.'}]},
+    {woord:'apasionada',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'gepassioneerd / vurig',uitleg:'Iemand die apasionada is doet alles vanuit vuur en overtuiging. Geen halfslachtigheid — hart en ziel in alles wat ze doet.',uitspraak:'ah-pah-syo-NAH-dah',voorbeelden:[{es:'Es una persona muy apasionada.',nl:'Ze is een heel gepassioneerd persoon.'},{es:'Habla de forma apasionada.',nl:'Ze praat op een vurige manier.'}]},
+    {woord:'serena',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'sereen / rustig van binnenuit',uitleg:'Serena is de innerlijke kalmte die niet van buiten komt maar van binnen — een rustig centrum dat niet verstoord wordt door het lawaai van de wereld.',uitspraak:'seh-REH-nah',voorbeelden:[{es:'Se mantiene serena en los momentos difíciles.',nl:'Ze blijft sereen in moeilijke momenten.'},{es:'Tiene una serenidad que transmite paz.',nl:'Ze heeft een sereniteit die vrede uitstraalt.'}]},
+    {woord:'poderosa',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'krachtig / machtig / sterk',uitleg:'Poderosa is een vrouw met innerlijke kracht — niet noodzakelijk luid of dominant, maar met een stevige kern die niet buigt.',uitspraak:'po-deh-RO-sah',voorbeelden:[{es:'Es una mujer muy poderosa.',nl:'Ze is een heel krachtige vrouw.'},{es:'Su voz es poderosa y segura.',nl:'Haar stem is krachtig en zeker.'}]},
+    {woord:'valiosa',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'waardevol / kostbaar',uitleg:'Valiosa beschrijft iemand of iets van grote waarde — niet in geld, maar in betekenis. Iemand die je leven rijker maakt.',uitspraak:'vah-LYO-sah',voorbeelden:[{es:'Eres una persona muy valiosa.',nl:'Je bent een heel waardevol persoon.'},{es:'Su amistad es valiosa.',nl:'Haar vriendschap is kostbaar.'}]},
+    {woord:'carismática',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'charismatisch',uitleg:'Iemand met carisma trekt anderen aan zonder moeite. Carismática is iemand die een kamer verandert alleen al door er in te lopen.',uitspraak:'kah-rees-MAH-tee-kah',voorbeelden:[{es:'Es increíblemente carismática.',nl:'Ze is ongelooflijk charismatisch.'},{es:'Su personalidad carismática seduce a todos.',nl:'Haar charismatische persoonlijkheid betovert iedereen.'}]},
+    {woord:'intuitiva',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'intuïtief',uitleg:'Iemand die intuitiva is voelt dingen aan zonder ze te kunnen verklaren. Ze weet wat er nodig is voordat het gezegd wordt.',uitspraak:'een-too-EE-tee-vah',voorbeelden:[{es:'Es muy intuitiva en las relaciones.',nl:'Ze is heel intuïtief in relaties.'},{es:'Su lado intuitivo nunca falla.',nl:'Haar intuïtieve kant faalt nooit.'}]},
+    {woord:'creativa',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'creatief',uitleg:'Iemand die creativa is ziet de wereld anders en maakt er iets moois van. Creatividad is niet alleen kunst — het is een manier van denken.',uitspraak:'kreh-ah-TEE-vah',voorbeelden:[{es:'Tiene una mente muy creativa.',nl:'Ze heeft een heel creatieve geest.'},{es:'Resuelve los problemas de forma creativa.',nl:'Ze lost problemen op een creatieve manier op.'}]},
+    {woord:'decidida',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'vastberaden / doortastend',uitleg:'Decidida is iemand die weet wat ze wil en er voor gaat. Geen eindeloos twijfelen — ze neemt beslissingen en staat erachter.',uitspraak:'deh-thee-DEE-dah',voorbeelden:[{es:'Es una mujer decidida y segura de sí misma.',nl:'Ze is een vastberaden en zelfverzekerde vrouw.'},{es:'Actúa de forma decidida.',nl:'Ze handelt doortastend.'}]},
+    {woord:'profunda',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'diepgaand / diep',uitleg:'Profunda beschrijft iemand die meer denkt dan de oppervlakte — wier woorden en blikken een laag hebben die je moet ontdekken.',uitspraak:'pro-FOON-dah',voorbeelden:[{es:'Es una persona profunda e interesante.',nl:'Ze is een diepgaand en interessant persoon.'},{es:'Sus palabras siempre son profundas.',nl:'Haar woorden zijn altijd diepgaand.'}]},
+    {woord:'enigmática',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'raadselachtig / mysterieus',uitleg:'Iemand enigmática is fascinerend juist omdat je haar nooit helemaal kunt doorgronden. Er is altijd nog meer te ontdekken.',uitspraak:'eh-nieg-MAH-tee-kah',voorbeelden:[{es:'Tiene algo enigmático que fascina.',nl:'Ze heeft iets raadselachtigs dat fascineert.'},{es:'Su mirada es enigmática.',nl:'Haar blik is mysterieus.'}]},
+    {woord:'sensible',woordsoort:'bijvoeglijk naamwoord',vertaling:'gevoelig / sensitief',uitleg:'Sensible in het Spaans betekent gevoelig — en dat is een kracht. Iemand die sensible is voelt meer, begrijpt meer, verbindt meer.',uitspraak:'sen-SEE-bleh',voorbeelden:[{es:'Es muy sensible a las emociones de los demás.',nl:'Ze is heel gevoelig voor de emoties van anderen.'},{es:'Su lado sensible es su mayor fortaleza.',nl:'Haar gevoelige kant is haar grootste kracht.'}]},
+    {woord:'vibrante',woordsoort:'bijvoeglijk naamwoord',vertaling:'bruisend / levendig / vol energie',uitleg:'Vibrante beschrijft iemand of iets dat vol energie is, dat trilt van leven. Je voelt het als je erbij bent.',uitspraak:'vee-BRAN-teh',voorbeelden:[{es:'Tiene una personalidad vibrante.',nl:'Ze heeft een bruisende persoonlijkheid.'},{es:'Una ciudad vibrante y llena de vida.',nl:'Een bruisende stad vol leven.'}]},
+    {woord:'resiliente',woordsoort:'bijvoeglijk naamwoord',vertaling:'veerkrachtig',uitleg:'Iemand die resiliente is buigt maar breekt niet — na elke storm staat ze op en gaat door. Veerkracht is een van de mooiste eigenschappen.',uitspraak:'reh-see-LYEN-teh',voorbeelden:[{es:'Es increíblemente resiliente.',nl:'Ze is ongelooflijk veerkrachtig.'},{es:'Su carácter resiliente la saca adelante.',nl:'Haar veerkrachtige karakter brengt haar verder.'}]},
+    {woord:'intensa',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'intens / heftig / diepgevoeld',uitleg:'Iemand intensa voelt dingen sterker dan anderen — liefde, muziek, een gesprek. Alles gaat dieper. Niet dramatisch, maar echt.',uitspraak:'een-TEN-sah',voorbeelden:[{es:'Vive de forma muy intensa.',nl:'Ze leeft heel intens.'},{es:'Tiene una mirada intensa.',nl:'Ze heeft een intense blik.'}]},
+    {woord:'deslumbrante',woordsoort:'bijvoeglijk naamwoord',vertaling:'verblindend / schitterend',uitleg:'Deslumbrante is letterlijk "verblindend" — zo mooi of indrukwekkend dat je even niet weet waar te kijken. Een compliment zonder reserves.',uitspraak:'des-loom-BRAN-teh',voorbeelden:[{es:'Es deslumbrante cuando sonríe.',nl:'Ze is verblindend als ze glimlacht.'},{es:'Una actuación deslumbrante.',nl:'Een schitterende optreden.'}]},
+    {woord:'cálida',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'warm / hartelijk',uitleg:'Cálida beschrijft iemand die warmte uitstraalt — niet letterlijk maar emotioneel. Bij een persoon cálida voel je je thuis.',uitspraak:'KAH-lee-dah',voorbeelden:[{es:'Tiene una personalidad muy cálida.',nl:'Ze heeft een heel warme persoonlijkheid.'},{es:'Una bienvenida cálida y sincera.',nl:'Een warme en oprechte ontvangst.'}]},
+    {woord:'carismática',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'charismatisch',uitleg:'Carisma is een eigenschap die niet aangeleerd kan worden — je hebt het of niet. En als je het hebt, trekt het anderen aan als een magneet.',uitspraak:'kah-rees-MAH-tee-kah',voorbeelden:[{es:'Su carisma es innegable.',nl:'Haar charisma is onmiskenbaar.'},{es:'Una líder carismática y cercana.',nl:'Een charismatische en benaderbare leider.'}]},
+    {woord:'memorable',woordsoort:'bijvoeglijk naamwoord',vertaling:'onvergetelijk / gedenkwaardig',uitleg:'Memorable is wat je niet vergeet — een persoon, een dag, een gesprek. Iemand memorable laat een spoor achter in je leven.',uitspraak:'meh-mo-RAH-bleh',voorbeelden:[{es:'Es una persona memorable.',nl:'Ze is een onvergetelijk persoon.'},{es:'Un encuentro memorable e irrepetible.',nl:'Een onvergetelijke en eenmalige ontmoeting.'}]},
+    {woord:'libre',woordsoort:'bijvoeglijk naamwoord',vertaling:'vrij / ongebonden',uitleg:'Libre is vrij — van geest, van keuze, van verwachtingen van anderen. Een persoon libre leeft op haar eigen voorwaarden.',uitspraak:'LEE-breh',voorbeelden:[{es:'Es un espíritu libre.',nl:'Ze is een vrije geest.'},{es:'Libre como el viento.',nl:'Vrij als de wind.'}]},
+    {woord:'vital',woordsoort:'bijvoeglijk naamwoord',vertaling:'vitaal / levenslustig',uitleg:'Vital beschrijft iemand vol leven — niet alleen energiek, maar echt levend. Iemand vital maakt dat je ook meer leven voelt in hun omgeving.',uitspraak:'vee-TAL',voorbeelden:[{es:'Es una persona vital y alegre.',nl:'Ze is een vitale en vrolijke persoon.'},{es:'Tiene una energía vital increíble.',nl:'Ze heeft een ongelooflijke levensenergie.'}]},
+    {woord:'encantadora',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'betoverend / charmant',uitleg:'Encantadora betekent letterlijk "die betovert" — iemand die anderen voor zich wint met haar charme, vriendelijkheid en uitstraling.',uitspraak:'en-kan-tah-DO-rah',voorbeelden:[{es:'Es absolutamente encantadora.',nl:'Ze is absoluut betoverend.'},{es:'Una personalidad encantadora y cercana.',nl:'Een betoverende en toegankelijke persoonlijkheid.'}]},
+    {woord:'inigualable',woordsoort:'bijvoeglijk naamwoord',vertaling:'ongeëvenaard / weergaloos',uitleg:'Inigualable is wat niet te evenaren is — de beste in zijn soort, of simpelweg uniek genoeg om geen vergelijking te verdragen.',uitspraak:'ee-nee-gwah-LAH-bleh',voorbeelden:[{es:'Tiene un carisma inigualable.',nl:'Ze heeft een ongeëvenaard charisma.'},{es:'Eres inigualable.',nl:'Je bent weergaloos.'}]},
+    {woord:'chispeante',woordsoort:'bijvoeglijk naamwoord',vertaling:'sprankelend / fonkelend',uitleg:'Chispeante is iemand of iets dat vonken maakt — een sprankelende conversatie, een fonkelende blik, een geest die altijd actief is.',uitspraak:'chees-peh-AN-teh',voorbeelden:[{es:'Tiene una conversación chispeante.',nl:'Ze heeft een sprankelende conversatie.'},{es:'Sus ojos son chispeantes.',nl:'Haar ogen zijn fonkelend.'}]},
+    {woord:'inquieta',woordsoort:'bijvoeglijk naamwoord (v)',vertaling:'onrustig / nieuwsgierig / altijd zoekend',uitleg:'Inquieta in positieve zin is iemand die nooit ophoudt met zoeken, leren en vragen stellen. Een inquieta geest is een levende geest.',uitspraak:'een-KYEH-tah',voorbeelden:[{es:'Tiene una mente inquieta y curiosa.',nl:'Ze heeft een rusteloze en nieuwsgierige geest.'},{es:'Es una persona inquieta que nunca para.',nl:'Ze is een altijd zoekend persoon die nooit stopt.'}]},
+    {woord:'solaz',woordsoort:'zelfstandig naamwoord (m)',vertaling:'vertroosting / genoegen / aangenaam gezelschap',uitleg:'Solaz is de troost en het genot dat je vindt bij een dierbaar persoon of activiteit. Ser el solaz de alguien = iemands lichtpunt zijn.',uitspraak:'so-LATH',voorbeelden:[{es:'Eres mi solaz en los días difíciles.',nl:'Jij bent mijn troost op moeilijke dagen.'},{es:'Encontró solaz en la música.',nl:'Ze vond vertroosting in muziek.'}]},
+  ]
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentMoodIdx = 0;
+let currentPage = 'music';
+let currentWord = null;
+let loadedWords = {}; // cache: moodIdx -> word object
+
+function getStorage() { try { return JSON.parse(localStorage.getItem('su_vocab')||'[]'); } catch(e){ return []; } }
+function saveStorage(d) { try { localStorage.setItem('su_vocab', JSON.stringify(d)); } catch(e){} }
+
+// ── MOOD SWITCH ───────────────────────────────────────────────────────────────
+function switchMood(idx) {
+  currentPage = 'music';
+  currentMoodIdx = idx;
+  const m = MOODS[idx];
+
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.nav-tab[data-mood="${idx}"]`).classList.add('active');
+  document.getElementById('page-music').classList.add('active');
+  document.getElementById('page-vocab').classList.remove('active');
+
+  document.documentElement.style.setProperty('--glow', m.glow);
+  document.documentElement.style.setProperty('--accent', m.accent);
+
+  document.getElementById('moodDesc').textContent = m.desc;
+  document.getElementById('vinylIcon').textContent = m.icon;
+  document.getElementById('openFull').href = m.link;
+
+  // auto-play embed on tab click
+  const wrap = document.getElementById('embedWrap');
+  const startTime = Math.floor(Math.random()*1800);
+  wrap.innerHTML = '<iframe src="https://open.spotify.com/embed/playlist/'+m.playlist+'?utm_source=generator&theme=0&start_time='+startTime+'" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px;display:block;"></iframe>';
+  wrap.classList.add('visible');
+  document.getElementById('vinyl').classList.add('playing');
+
+  // load word (cached or new)
+  if (loadedWords[idx]) {
+    renderWord(loadedWords[idx]);
+  } else {
+    loadWord(false);
+  }
+}
+
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.nav-tab[data-page="vocab"]`).classList.add('active');
+  document.getElementById('page-music').classList.remove('active');
+  document.getElementById('page-vocab').classList.add('active');
+  document.documentElement.style.setProperty('--glow','#ffffff');
+  document.documentElement.style.setProperty('--accent','rgba(255,255,255,0.3)');
+  renderVocabPage();
+}
+
+// ── SPOTIFY ───────────────────────────────────────────────────────────────────
+function playRandom() {
+  const m = MOODS[currentMoodIdx];
+  const wrap = document.getElementById('embedWrap');
+  const startTime = Math.floor(Math.random()*1800);
+  wrap.innerHTML = `<iframe
+    src="https://open.spotify.com/embed/playlist/${m.playlist}?utm_source=generator&theme=0&start_time=${startTime}"
+    height="152"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    loading="lazy"
+    style="border-radius:12px;display:block;"
+  ></iframe>`;
+  wrap.classList.add('visible');
+  document.getElementById('vinyl').classList.add('playing');
+}
+
+// ── WORD via CLAUDE API ───────────────────────────────────────────────────────
+function loadWord(forceNew) {
+  const idx = currentMoodIdx;
+
+  if (!forceNew && loadedWords[idx]) { renderWord(loadedWords[idx]); return; }
+
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  setTimeout(()=>btn.classList.remove('spinning'), 400);
+
+  // Get shown words to avoid repeats this session
+  const shown = new Set(Object.values(loadedWords).map(w=>w&&w.woord).filter(Boolean));
+  const pool = WORDS[idx].filter(w => !shown.has(w.woord));
+  const source = pool.length > 0 ? pool : WORDS[idx]; // reset if all shown
+  const word = source[Math.floor(Math.random() * source.length)];
+  loadedWords[idx] = word;
+  renderWord(word);
+}
+
+// ── RENDER WORD ───────────────────────────────────────────────────────────────
+function renderWord(word) {
+  currentWord = word;
+  const stored = getStorage();
+  const saved = stored.find(w=>w.woord===word.woord && w.moodIdx===currentMoodIdx);
+  const rating = saved ? saved.rating : null;
+
+  const voorbeelden = (word.voorbeelden||[]).map(e=>`
+    <div class="example-line"><em>${e.es}</em></div>
+    <div class="example-line" style="margin-bottom:10px;margin-left:1rem;font-size:12px;color:var(--muted)">${e.nl}</div>
+  `).join('');
+
+  document.getElementById('wordContent').innerHTML = `
+    <div class="word-tag">Woord van de dag · ${MOODS[currentMoodIdx].label}</div>
+    <div class="word-es">${word.woord}</div>
+    <div class="word-type">${word.woordsoort||''}</div>
+    <div class="word-nl-trans">${word.vertaling}</div>
+    <div class="pron-row">
+      <span class="pron-text">/${word.uitspraak}/</span>
+      <button class="speak-btn" onclick="speakWord('${word.woord.replace(/'/g,"\\'")}')">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        Beluister
+      </button>
+    </div>
+    <div class="word-uitleg">${word.uitleg}</div>
+    ${voorbeelden ? `<div class="examples-label">Voorbeelden</div>${voorbeelden}` : ''}
+    <div class="rating-row">
+      <button class="rate-btn ${rating==='love'?'active-love':''}" onclick="rateWord('love')">❤️<span>Geweldig</span></button>
+      <button class="rate-btn ${rating==='ok'?'active-ok':''}" onclick="rateWord('ok')">👍<span>Goed</span></button>
+      <button class="rate-btn ${rating==='nope'?'active-nope':''}" onclick="rateWord('nope')">👎<span>Niet voor mij</span></button>
+    </div>
+    <div class="saved-msg ${rating?'ok':''}" id="savedMsg">${rating?'Opgeslagen ✓':''}</div>
+  `;
+}
+
+// ── SPEECH ────────────────────────────────────────────────────────────────────
+function speakWord(word) {
+  if (!window.speechSynthesis) { alert('Speech not supported in this browser'); return; }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.lang = 'es-ES';
+  utter.rate = 0.85;
+  utter.pitch = 1;
+
+  // Try to pick a Spanish voice
+  const voices = window.speechSynthesis.getVoices();
+  const esVoice = voices.find(v=>v.lang.startsWith('es'));
+  if (esVoice) utter.voice = esVoice;
+  window.speechSynthesis.speak(utter);
+}
+
+// Voices load async on some browsers
+window.speechSynthesis && window.speechSynthesis.addEventListener('voiceschanged', ()=>{});
+
+// ── RATING ────────────────────────────────────────────────────────────────────
+function rateWord(rating) {
+  if (!currentWord) return;
+  const stored = getStorage();
+  const filtered = stored.filter(w=>!(w.woord===currentWord.woord && w.moodIdx===currentMoodIdx));
+  filtered.push({ ...currentWord, moodIdx: currentMoodIdx, moodLabel: MOODS[currentMoodIdx].label, rating, savedAt: Date.now() });
+  saveStorage(filtered);
+
+  // re-render buttons
+  document.querySelectorAll('.rate-btn').forEach(b=>b.className='rate-btn');
+  const map = {love:'active-love',ok:'active-ok',nope:'active-nope'};
+  const btns = document.querySelectorAll('.rate-btn');
+  const labels = ['love','ok','nope'];
+  btns.forEach((b,i)=>{ if(labels[i]===rating) b.classList.add(map[rating]); });
+
+  const msg = document.getElementById('savedMsg');
+  if (msg) { msg.textContent='Opgeslagen ✓'; msg.classList.add('ok'); }
+}
+
+// ── VOCAB PAGE ────────────────────────────────────────────────────────────────
+let activeFolder = 'all';
+
+function filterFolder(f) {
+  activeFolder = f;
+  document.querySelectorAll('.folder-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.folder-tab[data-f="${f}"]`).classList.add('active');
+  renderVocabList();
+}
+
+function renderVocabPage() {
+  const stored = getStorage();
+  const counts = {all:stored.length,love:0,ok:0,nope:0};
+  stored.forEach(w=>{ if(counts[w.rating]!==undefined) counts[w.rating]++; });
+  ['all','love','ok','nope'].forEach(f=>{ const el=document.getElementById(`cnt-${f}`); if(el) el.textContent=counts[f]||''; });
+  renderVocabList();
+}
+
+function renderVocabList() {
+  const stored = getStorage();
+  const list = document.getElementById('vocabList');
+  const filtered = activeFolder==='all' ? stored : stored.filter(w=>w.rating===activeFolder);
+  if (!filtered.length) {
+    list.innerHTML=`<div class="empty-state"><div class="big">📖</div>Nog geen woorden hier.<br>Beoordeel woorden in de mood-tabs om ze hier te zien.</div>`;
+    return;
+  }
+  filtered.sort((a,b)=>b.savedAt-a.savedAt);
+  list.innerHTML = filtered.map((w,i)=>{
+    const emoji = w.rating==='love'?'❤️':w.rating==='ok'?'👍':'👎';
+    const vb = (w.voorbeelden||[]).map(e=>`<div class="example-line"><em>${e.es}</em></div><div class="example-line" style="font-size:12px;color:var(--muted);margin-left:1rem;margin-bottom:8px">${e.nl}</div>`).join('');
+    return `<div class="vocab-item" onclick="toggleVI(${i})">
+      <div class="vi-header"><span class="vi-word">${w.woord}</span><span class="vi-rating">${emoji}</span></div>
+      <div class="vi-nl">${w.vertaling} · <span style="font-size:11px;opacity:0.5">${w.moodLabel||''}</span></div>
+      <div class="vi-detail" id="vi-${i}">
+        <div class="vi-uitleg">${w.uitleg||''}</div>
+        <div class="vi-pron-row">
+          <span class="vi-pron">/${w.uitspraak}/</span>
+          <button class="speak-btn" onclick="event.stopPropagation();speakWord('${(w.woord||'').replace(/'/g,"\\'")}')">
+            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            Beluister
+          </button>
+        </div>
+        ${vb ? `<div class="examples-label" style="margin-top:0.5rem">Voorbeelden</div>${vb}` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleVI(i) { const d=document.getElementById(`vi-${i}`); if(d) d.classList.toggle('open'); }
+
+// ── EXPORT / IMPORT ──────────────────────────────────────────────────────────
+function exportWords() {
+  const data = getStorage();
+  if (!data.length) { alert('No words saved yet!'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'su-words-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importWords(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      saveStorage(data);
+      renderVocabPage();
+      alert('Words loaded successfully!');
+    } catch(err) {
+      alert('Could not read the file. Make sure it is a valid backup.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+switchMood(0);
+</script>
+</body>
+</html>
